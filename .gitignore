@@ -3,3 +3,4 @@ __pycache__/
 *.py[cod]
 app.db
 *.log
+video_storage/
