@@ -6,7 +6,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
 from fastapi.responses import RedirectResponse, StreamingResponse
-from sqlalchemy import asc, desc
+from sqlalchemy import asc, desc, func
 from sqlalchemy.orm import Session
 
 from .auth import get_current_user, redirect_to_login, require_user
@@ -146,6 +146,14 @@ def watch_video(
     current_index = accessible_ids.index(video.id)
     previous_id = accessible_ids[current_index - 1] if current_index > 0 else None
     next_id = accessible_ids[current_index + 1] if current_index < len(accessible_ids) - 1 else None
+    related_videos = (
+        accessible_videos_query(db, user)
+        .filter(Video.id != video.id, Video.category == video.category)
+        .order_by(func.random())
+        .limit(8)
+        .all()
+    )
+    autoplay_id = next_id or (related_videos[0].id if related_videos else None)
 
     return request.app.state.templates.TemplateResponse(
         request=request,
@@ -156,6 +164,8 @@ def watch_video(
             "video": video,
             "previous_id": previous_id,
             "next_id": next_id,
+            "autoplay_id": autoplay_id,
+            "related_videos": related_videos,
         },
     )
 

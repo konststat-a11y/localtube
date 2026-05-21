@@ -380,7 +380,7 @@ td {
 }
 
 .watch-layout {
-  max-width: 1100px;
+  max-width: 1380px;
   margin: 0 auto;
   padding: 28px;
 }
@@ -396,19 +396,416 @@ td {
   flex: 1;
 }
 
+.watch-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 24px;
+  align-items: start;
+}
+
+.player-area {
+  position: relative;
+  grid-column: 1;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #050505;
+}
+
 .player {
+  display: block;
   width: 100%;
   max-height: 72vh;
+  aspect-ratio: 16 / 9;
   background: #000;
+}
+
+.player-skeleton {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  align-content: end;
+  gap: 14px;
+  padding: 28px;
+  background:
+    linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent),
+    #111827;
+  background-size: 200% 100%;
+  animation: skeleton-slide 1.2s linear infinite;
+}
+
+.player-area:not(.is-loading) .player-skeleton {
+  display: none;
+}
+
+.autoplay-countdown {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.58);
+  color: white;
+}
+
+.autoplay-countdown[hidden] {
+  display: none;
+}
+
+.autoplay-countdown-panel {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  min-width: 220px;
+  padding: 22px 26px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 8px;
+  background: rgba(15, 23, 42, 0.88);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.38);
+}
+
+.autoplay-countdown-panel strong {
+  font-size: 56px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.autoplay-countdown-label {
+  color: #cbd5e1;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.skeleton-line {
+  height: 14px;
+  width: 38%;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.skeleton-line.wide {
+  width: 68%;
+}
+
+@keyframes skeleton-slide {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.player-controls {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 3;
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  color: white;
+  background: linear-gradient(0deg, rgba(0, 0, 0, 0.82), rgba(0, 0, 0, 0.18), transparent);
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.player-area:hover .player-controls,
+.player-area:focus-within .player-controls,
+.player-area.is-paused .player-controls {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.time-row,
+.control-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.time-row {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.timeline {
+  accent-color: var(--accent);
+}
+
+.timeline {
+  flex: 1;
+}
+
+.control-row {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.control-row [data-play-toggle] {
+  margin-right: auto;
+}
+
+.icon-button {
+  display: inline-grid;
+  place-items: center;
+  min-width: 38px;
+  min-height: 34px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 6px;
+  background: rgba(17, 24, 39, 0.72);
+  color: white;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.icon-button:hover,
+.icon-button.is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.icon-button.small {
+  min-width: 34px;
+  min-height: 32px;
+  color: var(--text);
+  background: var(--surface);
+  border-color: var(--line);
+}
+
+.control-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.control-select select {
+  min-height: 34px;
+  padding: 6px 8px;
+  color: white;
+  background: rgba(17, 24, 39, 0.72);
+  border-color: rgba(255, 255, 255, 0.24);
+}
+
+.volume-slider {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: white;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.volume-slider input {
+  width: 104px;
+  padding: 0;
+  accent-color: var(--accent);
+}
+
+.recommendations-autoplay {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.recommendations-autoplay input {
+  position: relative;
+  width: 42px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid #94a3b8;
+  border-radius: 999px;
+  appearance: none;
+  background: #334155;
+  cursor: pointer;
+}
+
+.recommendations-autoplay input::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #f8fafc;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.35);
+  transition: transform 140ms ease;
+}
+
+.recommendations-autoplay input:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.recommendations-autoplay input:checked::after {
+  transform: translateX(20px);
 }
 
 .video-details {
+  grid-column: 1;
   padding: 18px 0;
 }
 
 .video-details h1 {
   margin-bottom: 8px;
+}
+
+.recommendations {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  position: sticky;
+  top: 88px;
+  min-width: 0;
+}
+
+.recommendations-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.recommendations h2 {
+  font-size: 18px;
+}
+
+.recommendation-list {
+  display: grid;
+  gap: 12px;
+}
+
+.recommendation-card {
+  display: grid;
+  grid-template-columns: 128px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  padding: 8px;
+  border-radius: 8px;
+}
+
+.recommendation-card:hover {
+  background: var(--surface);
+}
+
+.recommendation-thumb {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #1f2937, #475569);
+  color: white;
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.recommendation-thumb::after {
+  content: "";
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-top: 9px solid transparent;
+  border-bottom: 9px solid transparent;
+  border-left: 14px solid rgba(255, 255, 255, 0.92);
+}
+
+.recommendation-info {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.recommendation-info strong {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 15px;
+  line-height: 1.25;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.recommendation-info small {
+  overflow: hidden;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.watch-layout.recommendations-collapsed .watch-grid {
+  grid-template-columns: minmax(0, 1fr) 52px;
+}
+
+.watch-layout.recommendations-collapsed .recommendations {
+  position: sticky;
+  display: grid;
+  justify-items: center;
+}
+
+.watch-layout.recommendations-collapsed .recommendations h2,
+.watch-layout.recommendations-collapsed .recommendations-autoplay,
+.watch-layout.recommendations-collapsed .recommendation-list,
+.watch-layout.recommendations-collapsed .recommendations > .muted {
+  display: none;
+}
+
+.watch-layout.theater-mode {
+  max-width: none;
+  padding-right: 40px;
+  padding-left: 40px;
+}
+
+.watch-layout.theater-mode .watch-grid {
+  grid-template-columns: minmax(0, 1fr) 360px;
+}
+
+.watch-layout.theater-mode .player-area {
+  grid-column: 1 / -1;
+}
+
+.watch-layout.theater-mode .video-details {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.watch-layout.theater-mode .recommendations {
+  grid-column: 2;
+  grid-row: 2;
+  position: static;
+}
+
+.watch-layout.theater-mode .player {
+  max-height: calc(100vh - 160px);
+}
+
+.watch-layout.theater-mode.recommendations-collapsed .watch-grid {
+  grid-template-columns: minmax(0, 1fr) 52px;
+}
+
+.player-area:fullscreen {
+  display: grid;
+  align-content: center;
+  border-radius: 0;
+}
+
+.player-area:fullscreen .player {
+  max-height: 100vh;
 }
 
 code {
@@ -421,6 +818,37 @@ code {
   .layout,
   .admin-layout {
     grid-template-columns: 1fr;
+  }
+
+  .watch-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .player-area,
+  .video-details,
+  .recommendations {
+    grid-column: 1;
+    grid-row: auto;
+    position: static;
+  }
+
+  .watch-layout.recommendations-collapsed .watch-grid,
+  .watch-layout.theater-mode .watch-grid,
+  .watch-layout.theater-mode.recommendations-collapsed .watch-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .watch-layout {
+    padding: 18px;
+  }
+
+  .watch-layout.theater-mode {
+    padding-right: 18px;
+    padding-left: 18px;
+  }
+
+  .control-row {
+    align-items: stretch;
   }
 
   .sidebar,
