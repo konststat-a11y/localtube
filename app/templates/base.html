@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Локальный видеосайт{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/main.css') }}">
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/">LocalTube</a>
+      {% if user %}
+        <nav class="topnav" aria-label="Основная навигация">
+          <a href="/">Видео</a>
+          {% if user.is_admin %}
+            <a href="/admin">Админ-панель</a>
+          {% endif %}
+        </nav>
+        <div class="userbar">
+          <span>{{ user.username }}</span>
+          <form action="/logout" method="post">
+            <button type="submit" class="button ghost">Выйти</button>
+          </form>
+        </div>
+      {% endif %}
+    </header>
+    <main class="{% block main_class %}page{% endblock %}">
+      {% block content %}{% endblock %}
+    </main>
+    <script src="{{ url_for('static', path='/js/app.js') }}"></script>
+  </body>
+</html>

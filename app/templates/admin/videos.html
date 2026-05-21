@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Видео - Админ-панель{% endblock %}
+
+{% block content %}
+  <section class="admin-layout">
+    <nav class="admin-nav">
+      <a href="/admin">Обзор</a>
+      <a href="/admin/users">Пользователи</a>
+      <a class="active" href="/admin/videos">Видео</a>
+      <a href="/admin/access">Доступ</a>
+    </nav>
+    <div class="admin-content">
+      <div class="toolbar">
+        <h1>Видео</h1>
+        <form action="/admin/videos/scan" method="post">
+          <button type="submit" class="button primary">Сканировать папку</button>
+        </form>
+      </div>
+      {% if scan %}
+        <p class="notice">Результат сканирования: {{ scan }}</p>
+      {% endif %}
+
+      {% if videos %}
+        <div class="video-admin-list">
+          {% for video in videos %}
+            <form action="/admin/videos/{{ video.id }}/update" method="post" class="video-edit">
+              <div class="video-edit-head">
+                <strong>{{ video.filename }}</strong>
+                <span class="status {% if video.is_available %}ok{% else %}missing{% endif %}">{{ "доступен" if video.is_available else "файл отсутствует" }}</span>
+              </div>
+              <div class="form-grid">
+                <label>Название<input type="text" name="title" value="{{ video.title }}" required></label>
+                <label>Автор<input type="text" name="author" value="{{ video.author }}"></label>
+                <label>Категория<input type="text" name="category" value="{{ video.category }}"></label>
+                <label>Описание<textarea name="description" rows="3">{{ video.description }}</textarea></label>
+              </div>
+              <p class="meta">{{ video.size_bytes | bytes }} · {{ video.file_path }}</p>
+              <button type="submit" class="button">Сохранить</button>
+            </form>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty">
+          <h2>Видео в базе нет</h2>
+          <p>Положите файлы в <code>video_storage</code> и запустите сканирование.</p>
+        </div>
+      {% endif %}
+    </div>
+  </section>
+{% endblock %}

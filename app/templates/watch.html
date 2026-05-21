@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}{{ video.title }} - LocalTube{% endblock %}
+
+{% block content %}
+  <section class="watch-layout">
+    <div class="watch-nav">
+      <a class="button" href="/">Назад</a>
+      <div class="spacer"></div>
+      {% if previous_id %}
+        <a class="button" href="/watch/{{ previous_id }}">Предыдущее</a>
+      {% endif %}
+      {% if next_id %}
+        <a class="button" href="/watch/{{ next_id }}">Следующее</a>
+      {% endif %}
+    </div>
+
+    <video class="player" controls preload="metadata">
+      <source src="/videos/{{ video.id }}/stream" type="video/mp4">
+      Ваш браузер не поддерживает HTML5 video.
+    </video>
+
+    <div class="video-details">
+      <h1>{{ video.title }}</h1>
+      <p class="meta">{{ video.author or "Автор не указан" }} · {{ video.category }} · {{ video.created_at | datetime }} · {{ video.size_bytes | bytes }}</p>
+      {% if video.description %}
+        <p>{{ video.description }}</p>
+      {% else %}
+        <p class="muted">Описание не добавлено.</p>
+      {% endif %}
+    </div>
+  </section>
+{% endblock %}

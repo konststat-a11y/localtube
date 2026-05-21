@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Видео - LocalTube{% endblock %}
+
+{% block content %}
+  <div class="layout">
+    <aside class="sidebar">
+      <h2>Категории</h2>
+      <a class="category-link {% if not current_category %}active{% endif %}" href="/?sort={{ sort }}&order={{ order }}">Все</a>
+      {% for category in categories %}
+        <a class="category-link {% if current_category == category %}active{% endif %}" href="/?category={{ category | urlencode }}&sort={{ sort }}&order={{ order }}">{{ category }}</a>
+      {% endfor %}
+    </aside>
+
+    <section class="content">
+      <div class="toolbar">
+        <h1>Доступные видео</h1>
+        <form method="get" class="filters">
+          {% if current_category %}
+            <input type="hidden" name="category" value="{{ current_category }}">
+          {% endif %}
+          <select name="sort" aria-label="Сортировка">
+            <option value="date" {% if sort == "date" %}selected{% endif %}>По дате</option>
+            <option value="title" {% if sort == "title" %}selected{% endif %}>По названию</option>
+          </select>
+          <select name="order" aria-label="Порядок">
+            <option value="desc" {% if order == "desc" %}selected{% endif %}>Сначала новые</option>
+            <option value="asc" {% if order == "asc" %}selected{% endif %}>По возрастанию</option>
+          </select>
+          <button type="submit" class="button">Применить</button>
+        </form>
+      </div>
+
+      {% if videos %}
+        <div class="video-grid">
+          {% for video in videos %}
+            <article class="video-card">
+              <a class="thumb" href="/watch/{{ video.id }}" aria-label="Смотреть {{ video.title }}">
+                <span>{{ video.title[:1] | upper }}</span>
+              </a>
+              <div class="video-card-body">
+                <h2><a href="/watch/{{ video.id }}">{{ video.title }}</a></h2>
+                <p class="muted">{{ video.author or "Автор не указан" }}</p>
+                <p class="meta">{{ video.category }} · {{ video.created_at | datetime }} · {{ video.size_bytes | bytes }}</p>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty">
+          <h2>Видео пока нет</h2>
+          <p>Администратор должен добавить файлы в папку <code>video_storage</code>, просканировать ее и назначить доступ.</p>
+        </div>
+      {% endif %}
+    </section>
+  </div>
+{% endblock %}

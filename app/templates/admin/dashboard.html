@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Админ-панель - LocalTube{% endblock %}
+
+{% block content %}
+  <section class="admin-layout">
+    <nav class="admin-nav">
+      <a class="active" href="/admin">Обзор</a>
+      <a href="/admin/users">Пользователи</a>
+      <a href="/admin/videos">Видео</a>
+      <a href="/admin/access">Доступ</a>
+    </nav>
+    <div class="admin-content">
+      <h1>Обзор</h1>
+      <div class="stats">
+        <div><strong>{{ users_count }}</strong><span>пользователей</span></div>
+        <div><strong>{{ videos_count }}</strong><span>видео в базе</span></div>
+        <div><strong>{{ available_videos_count }}</strong><span>доступных файлов</span></div>
+      </div>
+    </div>
+  </section>
+{% endblock %}

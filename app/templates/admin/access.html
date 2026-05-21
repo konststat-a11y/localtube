@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Доступ - Админ-панель{% endblock %}
+
+{% block content %}
+  <section class="admin-layout">
+    <nav class="admin-nav">
+      <a href="/admin">Обзор</a>
+      <a href="/admin/users">Пользователи</a>
+      <a href="/admin/videos">Видео</a>
+      <a class="active" href="/admin/access">Доступ</a>
+    </nav>
+    <div class="admin-content">
+      <h1>Управление доступом</h1>
+
+      {% if users and selected_user %}
+        <form method="get" action="/admin/access" class="inline-form">
+          <select name="user_id" aria-label="Пользователь">
+            {% for item in users %}
+              <option value="{{ item.id }}" {% if selected_user.id == item.id %}selected{% endif %}>{{ item.username }}</option>
+            {% endfor %}
+          </select>
+          <button type="submit" class="button">Выбрать</button>
+        </form>
+
+        <form action="/admin/access/update" method="post" class="access-list">
+          <input type="hidden" name="user_id" value="{{ selected_user.id }}">
+          {% for video in videos %}
+            <label class="access-row">
+              <input type="checkbox" name="video_ids" value="{{ video.id }}" {% if video.id in selected_ids %}checked{% endif %}>
+              <span>{{ video.title }}</span>
+              <small>{{ video.category }} · {{ "доступен" if video.is_available else "файл отсутствует" }}</small>
+            </label>
+          {% endfor %}
+          <button type="submit" class="button primary">Сохранить доступ</button>
+        </form>
+      {% else %}
+        <div class="empty">
+          <h2>Нет пользователей</h2>
+          <p>Создайте пользователя на странице пользователей.</p>
+        </div>
+      {% endif %}
+    </div>
+  </section>
+{% endblock %}
