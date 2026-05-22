@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
 from passlib.context import CryptContext
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from .database import get_db
@@ -50,15 +51,25 @@ def redirect_to_login() -> RedirectResponse:
     return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
 
 
+def render_auth_form(
+    request: Request,
+    template: str,
+    error: str | None = None,
+    status_code: int = status.HTTP_200_OK,
+):
+    return request.app.state.templates.TemplateResponse(
+        request=request,
+        name=template,
+        context={"request": request, "user": None, "error": error},
+        status_code=status_code,
+    )
+
+
 @router.get("/login")
 def login_page(request: Request):
     if request.session.get("user_id"):
         return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
-    return request.app.state.templates.TemplateResponse(
-        request=request,
-        name="login.html",
-        context={"request": request, "error": None},
-    )
+    return render_auth_form(request, "login.html")
 
 
 @router.post("/login")
@@ -70,10 +81,10 @@ def login(
 ):
     user = get_user_by_username(db, username.strip())
     if user is None or not verify_password(password, user.password_hash):
-        return request.app.state.templates.TemplateResponse(
-            request=request,
-            name="login.html",
-            context={"request": request, "error": "Неверный логин или пароль."},
+        return render_auth_form(
+            request,
+            "login.html",
+            "Неверный логин или пароль.",
             status_code=status.HTTP_401_UNAUTHORIZED,
         )
 
@@ -81,10 +92,55 @@ def login(
     return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
 
 
+@router.get("/register")
+def register_page(request: Request):
+    if request.session.get("user_id"):
+        return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
+    return render_auth_form(request, "register.html")
+
+
+@router.post("/register")
+def register(
+    request: Request,
+    username: Annotated[str, Form()],
+    password: Annotated[str, Form()],
+    db: Annotated[Session, Depends(get_db)],
+):
+    username = username.strip()
+    if not username or not password:
+        return render_auth_form(
+            request,
+            "register.html",
+            "Укажите логин и пароль.",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+    user = User(
+        username=username,
+        password_hash=hash_password(password),
+        is_admin=False,
+    )
+    db.add(user)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        return render_auth_form(
+            request,
+            "register.html",
+            "Пользователь с таким логином уже существует.",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+    db.refresh(user)
+    request.session["user_id"] = user.id
+    return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
+
+
 @router.post("/logout")
 def logout(request: Request):
     request.session.clear()
-    return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+    return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
 
 
 def ensure_initial_admin(db: Session) -> None:

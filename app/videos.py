@@ -36,6 +36,25 @@ def accessible_videos_query(db: Session, user: User):
     return query.join(VideoAccess).filter(VideoAccess.user_id == user.id)
 
 
+def public_videos_query(db: Session):
+    return db.query(Video).filter(Video.is_available.is_(True))
+
+
+def ensure_default_video_access(db: Session, user: User) -> None:
+    if user.is_admin:
+        return
+
+    has_access = db.query(VideoAccess).filter(VideoAccess.user_id == user.id).first()
+    if has_access:
+        return
+
+    video_ids = [row[0] for row in db.query(Video.id).filter(Video.is_available.is_(True)).all()]
+    for video_id in video_ids:
+        db.add(VideoAccess(user_id=user.id, video_id=video_id))
+    if video_ids:
+        db.commit()
+
+
 def apply_video_sort(query, sort: str, order: str):
     direction = asc if order == "asc" else desc
     if sort == "title":
@@ -89,14 +108,15 @@ def index(
     request: Request,
     db: Annotated[Session, Depends(get_db)],
     category: Annotated[str | None, Query()] = None,
+    login: Annotated[bool, Query()] = False,
     sort: Annotated[str, Query(pattern="^(title|date)$")] = "date",
     order: Annotated[str, Query(pattern="^(asc|desc)$")] = "desc",
 ):
     user = get_current_user(request, db)
-    if user is None:
-        return redirect_to_login()
+    if user is not None:
+        ensure_default_video_access(db, user)
 
-    base_query = accessible_videos_query(db, user)
+    base_query = accessible_videos_query(db, user) if user is not None else public_videos_query(db)
     categories = [
         row[0]
         for row in base_query.with_entities(Video.category)
@@ -120,6 +140,7 @@ def index(
             "videos": videos,
             "categories": categories,
             "current_category": category,
+            "show_login": login and user is None,
             "sort": sort,
             "order": order,
         },

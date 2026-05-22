@@ -170,6 +170,52 @@ select {
   background: transparent;
 }
 
+.login-icon {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--surface);
+}
+
+.login-icon::before,
+.login-icon::after {
+  content: "";
+  position: absolute;
+  border: 2px solid var(--text);
+}
+
+.login-icon::before {
+  top: 9px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.login-icon::after {
+  bottom: 8px;
+  width: 19px;
+  height: 9px;
+  border-radius: 999px 999px 0 0;
+  border-bottom: 0;
+}
+
+.login-icon:hover {
+  border-color: var(--accent);
+}
+
+.visually-hidden {
+  position: absolute;
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
 .video-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -224,6 +270,54 @@ select {
 
 .empty {
   padding: 36px;
+}
+
+.empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.sidebar-note,
+.auth-switch {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.auth-switch a {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.auth-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.auth-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.58);
+}
+
+.auth-modal-panel {
+  position: relative;
+  z-index: 1;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
+}
+
+.auth-close {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  color: var(--muted);
+  font-size: 24px;
+  line-height: 1;
 }
 
 .login-page {

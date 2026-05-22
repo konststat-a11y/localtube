@@ -4,29 +4,33 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}Локальный видеосайт{% endblock %}</title>
-    <link rel="stylesheet" href="{{ url_for('static', path='/css/main.css') }}?v=8">
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/main.css') }}?v=10">
   </head>
   <body>
     <header class="topbar">
       <a class="brand" href="/">LocalTube</a>
-      {% if user %}
-        <nav class="topnav" aria-label="Основная навигация">
-          <a href="/">Видео</a>
-          {% if user.is_admin %}
-            <a href="/admin">Админ-панель</a>
-          {% endif %}
-        </nav>
-        <div class="userbar">
+      <nav class="topnav" aria-label="Основная навигация">
+        <a href="/">Видео</a>
+        {% if user and user.is_admin %}
+          <a href="/admin">Админ-панель</a>
+        {% endif %}
+      </nav>
+      <div class="userbar">
+        {% if user %}
           <span>{{ user.username }}</span>
           <form action="/logout" method="post">
             <button type="submit" class="button ghost">Выйти</button>
           </form>
-        </div>
-      {% endif %}
+        {% else %}
+          <a class="login-icon" href="/?login=1" aria-label="Войти" title="Войти">
+            <span class="visually-hidden">Войти</span>
+          </a>
+        {% endif %}
+      </div>
     </header>
     <main class="{% block main_class %}page{% endblock %}">
       {% block content %}{% endblock %}
     </main>
-    <script src="{{ url_for('static', path='/js/app.js') }}?v=8"></script>
+    <script src="{{ url_for('static', path='/js/app.js') }}?v=10"></script>
   </body>
 </html>

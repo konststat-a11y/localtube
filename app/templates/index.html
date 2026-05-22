@@ -14,7 +14,7 @@
 
     <section class="content">
       <div class="toolbar">
-        <h1>Доступные видео</h1>
+        <h1>{% if user %}Доступные видео{% else %}Файлы{% endif %}</h1>
         <form method="get" class="filters">
           {% if current_category %}
             <input type="hidden" name="category" value="{{ current_category }}">
@@ -34,14 +34,18 @@
       {% if videos %}
         <div class="video-grid">
           {% for video in videos %}
+            {% set video_href = "/watch/" ~ video.id if user else "/?login=1" %}
             <article class="video-card">
-              <a class="thumb" href="/watch/{{ video.id }}" aria-label="Смотреть {{ video.title }}">
+              <a class="thumb" href="{{ video_href }}" aria-label="{% if user %}Смотреть{% else %}Войти для просмотра{% endif %} {{ video.title }}">
                 <span>{{ video.title[:1] | upper }}</span>
               </a>
               <div class="video-card-body">
-                <h2><a href="/watch/{{ video.id }}">{{ video.title }}</a></h2>
+                <h2><a href="{{ video_href }}">{{ video.title }}</a></h2>
                 <p class="muted">{{ video.author or "Автор не указан" }}</p>
                 <p class="meta">{{ video.category }} · {{ video.created_at | datetime }} · {{ video.size_bytes | bytes }}</p>
+                {% if not user %}
+                  <p class="meta">Войдите, чтобы открыть видео.</p>
+                {% endif %}
               </div>
             </article>
           {% endfor %}
@@ -49,9 +53,31 @@
       {% else %}
         <div class="empty">
           <h2>Видео пока нет</h2>
-          <p>Администратор должен добавить файлы в папку <code>video_storage</code>, просканировать ее и назначить доступ.</p>
+          <p>Администратор должен добавить файлы в папку <code>video_storage</code> и просканировать ее.</p>
         </div>
       {% endif %}
     </section>
   </div>
+
+  {% if show_login %}
+    <div class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="login-title">
+      <a class="auth-backdrop" href="/" aria-label="Закрыть"></a>
+      <section class="login-panel auth-modal-panel">
+        <a class="auth-close" href="/" aria-label="Закрыть">×</a>
+        <h1 id="login-title">Вход</h1>
+        <form action="/login" method="post" class="form-stack">
+          <label>
+            Логин
+            <input type="text" name="username" autocomplete="username" required autofocus>
+          </label>
+          <label>
+            Пароль
+            <input type="password" name="password" autocomplete="current-password" required>
+          </label>
+          <button type="submit" class="button primary">Войти</button>
+        </form>
+        <p class="muted auth-switch">Нет аккаунта? <a href="/register">Зарегистрироваться</a></p>
+      </section>
+    </div>
+  {% endif %}
 {% endblock %}
