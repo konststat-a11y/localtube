@@ -16,6 +16,7 @@
 - Let authenticated users upload supported video files with a custom title.
 - Accept large user uploads up to 10 GB while saving files in chunks.
 - Transcode uploaded H.265/HEVC files to browser-compatible H.264/AAC MP4 with ffmpeg.
+- Generate video card thumbnails from the first frame with ffmpeg.
 - Redirect successful uploads to the new watch page.
 - Show upload animation for at least one second after submit.
 - Let admins and video authors delete videos.
@@ -58,6 +59,7 @@
 - Authenticated user can upload a video and becomes its author.
 - Another regular user can see and stream the uploaded video.
 - H.265/HEVC `.mp4`, `.m4v`, `.mov`, and `.mkv` uploads are accepted as input and saved as browser-compatible `.mp4`.
+- Uploaded and scanned videos get a JPEG thumbnail in `video_storage/thumbnails/`.
 - Other regular users cannot delete someone else's video.
 - Admin and author can delete a video.
 - Existing admin can still open `/admin`.

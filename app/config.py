@@ -7,6 +7,7 @@ APP_DIR = BASE_DIR / "app"
 TEMPLATE_DIR = APP_DIR / "templates"
 STATIC_DIR = APP_DIR / "static"
 VIDEO_STORAGE_DIR = BASE_DIR / "video_storage"
+THUMBNAIL_DIR = VIDEO_STORAGE_DIR / "thumbnails"
 DATABASE_URL = f"sqlite:///{BASE_DIR / 'app.db'}"
 
 SESSION_SECRET_KEY = "change-this-local-development-secret"
@@ -22,4 +23,5 @@ VIDEO_MEDIA_TYPES = {
 }
 STREAM_CHUNK_SIZE = 1024 * 1024
 MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024 * 1024
-FFMPEG_PATH = os.getenv("LOCALTUBE_FFMPEG_PATH", "ffmpeg")
+LOCAL_FFMPEG_PATH = BASE_DIR / "tools" / "ffmpeg" / "bin" / "ffmpeg.exe"
+FFMPEG_PATH = os.getenv("LOCALTUBE_FFMPEG_PATH", str(LOCAL_FFMPEG_PATH) if LOCAL_FFMPEG_PATH.exists() else "ffmpeg")

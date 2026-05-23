@@ -9,7 +9,7 @@ from threading import Event, Lock, Thread
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, Request, UploadFile, status
-from fastapi.responses import RedirectResponse, StreamingResponse
+from fastapi.responses import FileResponse, RedirectResponse, StreamingResponse
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import asc, desc, func
 from sqlalchemy.orm import Session
@@ -20,6 +20,7 @@ from .config import (
     MAX_UPLOAD_SIZE_BYTES,
     STREAM_CHUNK_SIZE,
     SUPPORTED_VIDEO_EXTENSIONS,
+    THUMBNAIL_DIR,
     UPLOAD_VIDEO_EXTENSIONS,
     VIDEO_MEDIA_TYPES,
     VIDEO_STORAGE_DIR,
@@ -81,6 +82,7 @@ def delete_file_with_retries(path: Path, attempts: int = 12, delay_seconds: floa
 
 def remove_video_record(db: Session, video_id: int) -> None:
     video = db.query(Video).filter(Video.id == video_id).first()
+    delete_video_thumbnail(video_id)
     db.query(VideoAccess).filter(VideoAccess.video_id == video_id).delete()
     if video is not None:
         db.delete(video)
@@ -182,6 +184,10 @@ def guess_video_media_type(path: Path) -> str:
     return VIDEO_MEDIA_TYPES.get(path.suffix.lower()) or mimetypes.guess_type(path.name)[0] or "application/octet-stream"
 
 
+def get_thumbnail_path(video_id: int) -> Path:
+    return resolve_storage_path(THUMBNAIL_DIR / f"{video_id}.jpg")
+
+
 def resolve_ffmpeg_path() -> str:
     configured_path = Path(FFMPEG_PATH)
     if configured_path.exists():
@@ -226,7 +232,14 @@ def transcode_to_browser_mp4(source_path: Path, target_path: Path) -> None:
         str(target_path),
     ]
     try:
-        result = subprocess.run(command, capture_output=True, text=True, check=False)
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=False,
+        )
     except OSError as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -239,6 +252,62 @@ def transcode_to_browser_mp4(source_path: Path, target_path: Path) -> None:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Could not transcode video to browser-compatible MP4",
         )
+
+
+def generate_video_thumbnail(video_id: int, video_path: Path) -> bool:
+    if not video_path.exists() or not video_path.is_file():
+        return False
+
+    THUMBNAIL_DIR.mkdir(parents=True, exist_ok=True)
+    thumbnail_path = get_thumbnail_path(video_id)
+    temp_path = resolve_storage_path(THUMBNAIL_DIR / f".{video_id}.tmp.jpg")
+    try:
+        ffmpeg_path = resolve_ffmpeg_path()
+        command = [
+            ffmpeg_path,
+            "-y",
+            "-i",
+            str(video_path),
+            "-frames:v",
+            "1",
+            "-vf",
+            "scale=480:-2",
+            "-q:v",
+            "3",
+            str(temp_path),
+        ]
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=False,
+        )
+    except (HTTPException, OSError):
+        temp_path.unlink(missing_ok=True)
+        return False
+
+    if result.returncode != 0 or not temp_path.exists():
+        temp_path.unlink(missing_ok=True)
+        return False
+
+    temp_path.replace(thumbnail_path)
+    return True
+
+
+def ensure_video_thumbnail(video: Video) -> bool:
+    thumbnail_path = get_thumbnail_path(video.id)
+    if thumbnail_path.exists() and thumbnail_path.is_file():
+        return True
+    return generate_video_thumbnail(video.id, Path(video.file_path))
+
+
+def delete_video_thumbnail(video_id: int) -> None:
+    try:
+        get_thumbnail_path(video_id).unlink(missing_ok=True)
+    except OSError:
+        pass
 
 
 def grant_video_access_to_regular_users(db: Session, video_id: int) -> None:
@@ -301,13 +370,17 @@ def apply_video_sort(query, sort: str, order: str):
 
 def scan_video_storage(db: Session) -> tuple[int, int, int]:
     VIDEO_STORAGE_DIR.mkdir(parents=True, exist_ok=True)
+    THUMBNAIL_DIR.mkdir(parents=True, exist_ok=True)
 
     db.query(Video).update({Video.is_available: False})
     created = 0
     updated = 0
     seen_paths: set[str] = set()
+    thumbnail_candidates: list[Video] = []
 
     for path in VIDEO_STORAGE_DIR.rglob("*"):
+        if THUMBNAIL_DIR in path.parents:
+            continue
         if not path.is_file() or path.suffix.lower() not in SUPPORTED_VIDEO_EXTENSIONS:
             continue
 
@@ -334,8 +407,11 @@ def scan_video_storage(db: Session) -> tuple[int, int, int]:
             video.is_available = True
             video.updated_at = datetime.utcnow()
             updated += 1
+        thumbnail_candidates.append(video)
 
     db.commit()
+    for video in thumbnail_candidates:
+        ensure_video_thumbnail(video)
     missing = db.query(Video).filter(Video.is_available.is_(False)).count()
     return created, updated, missing
 
@@ -434,6 +510,7 @@ def upload_video(
         grant_video_access_to_regular_users(db, video.id)
         video_id = video.id
         db.commit()
+        ensure_video_thumbnail(video)
     except HTTPException:
         db.rollback()
         raise
@@ -455,6 +532,25 @@ def upload_video(
         source_path.unlink(missing_ok=True)
 
     return RedirectResponse(url=f"/watch/{video_id}", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.get("/videos/{video_id}/thumbnail")
+def video_thumbnail(
+    video_id: int,
+    request: Request,
+    db: Annotated[Session, Depends(get_db)],
+):
+    user = get_current_user(request, db)
+    video = db.query(Video).filter(Video.id == video_id, Video.is_available.is_(True)).first()
+    if video is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    if user is not None and not user_can_access_video(db, user, video):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+
+    thumbnail_path = get_thumbnail_path(video.id)
+    if not thumbnail_path.exists() and not ensure_video_thumbnail(video):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    return FileResponse(thumbnail_path, media_type="image/jpeg")
 
 
 

@@ -37,6 +37,7 @@
             {% set video_href = "/watch/" ~ video.id if user else "/?login=1" %}
             <article class="video-card">
               <a class="thumb" href="{{ video_href }}" aria-label="{% if user %}Смотреть{% else %}Войти для просмотра{% endif %} {{ video.title }}">
+                <img src="/videos/{{ video.id }}/thumbnail" alt="" loading="lazy" onerror="this.remove()">
                 <span>{{ video.title[:1] | upper }}</span>
               </a>
               <div class="video-card-body">
