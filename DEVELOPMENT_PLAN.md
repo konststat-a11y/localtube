@@ -12,6 +12,16 @@
 - Create regular users server-side from login and password.
 - Store passwords only as hashes.
 - Give newly self-registered regular users access to the current available video list through `VideoAccess`.
+- Keep regular users synchronized with available videos so users can see each other's uploads.
+- Let authenticated users upload supported video files with a custom title.
+- Accept large user uploads up to 10 GB while saving files in chunks.
+- Transcode uploaded H.265/HEVC files to browser-compatible H.264/AAC MP4 with ffmpeg.
+- Redirect successful uploads to the new watch page.
+- Show upload animation for at least one second after submit.
+- Let admins and video authors delete videos.
+- Stop playback before delete requests from the watch page to avoid Windows file locks.
+- Interrupt active server-side streams for the deleted video before unlinking the file.
+- If Windows keeps the file locked, keep retrying physical deletion from `video_storage/` in the background.
 - Keep `/watch/{video_id}` and `/videos/{video_id}/stream` protected by session and video access checks.
 
 ## Later
@@ -31,6 +41,11 @@
 - Chunked video streaming with `Range` support.
 - Public home page that can render the file list before login.
 - Separate registration page and server-side user creation.
+- User upload modal with drag and drop.
+- Server-side video upload into `video_storage/`.
+- Watch page uses the stream endpoint MIME instead of hardcoded `video/mp4`.
+- Video deletion guarded by admin-or-author checks.
+- Delete route hides the video and schedules physical file deletion instead of returning 500 when Windows keeps the file locked after stream interruption.
 
 ## Next Checks
 
@@ -40,4 +55,9 @@
 - Guest cannot stream `/videos/{video_id}/stream` without login.
 - New user can register with login and password.
 - New regular user sees the current available videos after registration.
+- Authenticated user can upload a video and becomes its author.
+- Another regular user can see and stream the uploaded video.
+- H.265/HEVC `.mp4`, `.m4v`, `.mov`, and `.mkv` uploads are accepted as input and saved as browser-compatible `.mp4`.
+- Other regular users cannot delete someone else's video.
+- Admin and author can delete a video.
 - Existing admin can still open `/admin`.

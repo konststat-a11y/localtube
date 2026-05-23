@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}Локальный видеосайт{% endblock %}</title>
-    <link rel="stylesheet" href="{{ url_for('static', path='/css/main.css') }}?v=10">
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/main.css') }}?v=12">
   </head>
   <body>
     <header class="topbar">
@@ -17,6 +17,7 @@
       </nav>
       <div class="userbar">
         {% if user %}
+          <a class="button" href="/?upload=1">Загрузить</a>
           <span>{{ user.username }}</span>
           <form action="/logout" method="post">
             <button type="submit" class="button ghost">Выйти</button>
@@ -31,6 +32,6 @@
     <main class="{% block main_class %}page{% endblock %}">
       {% block content %}{% endblock %}
     </main>
-    <script src="{{ url_for('static', path='/js/app.js') }}?v=10"></script>
+    <script src="{{ url_for('static', path='/js/app.js') }}?v=12"></script>
   </body>
 </html>

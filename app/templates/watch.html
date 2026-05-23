@@ -23,7 +23,7 @@
         </div>
 
         <video class="player" data-player preload="metadata" tabindex="0">
-          <source src="/videos/{{ video.id }}/stream" type="video/mp4">
+          <source src="/videos/{{ video.id }}/stream">
           Ваш браузер не поддерживает HTML5 video.
         </video>
 
@@ -71,6 +71,11 @@
       <div class="video-details">
         <h1>{{ video.title }}</h1>
         <p class="meta">{{ video.author or "Автор не указан" }} · {{ video.category }} · {{ video.created_at | datetime }} · {{ video.size_bytes | bytes }}</p>
+        {% if can_delete %}
+          <form action="/videos/{{ video.id }}/delete" method="post" class="watch-actions" data-confirm="Удалить видео «{{ video.title }}»?" data-delete-video>
+            <button type="submit" class="button danger">Удалить видео</button>
+          </form>
+        {% endif %}
         {% if video.description %}
           <p>{{ video.description }}</p>
         {% else %}

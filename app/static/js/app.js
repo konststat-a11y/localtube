@@ -4,6 +4,55 @@ document.addEventListener("submit", (event) => {
     return;
   }
 
+  const confirmation = form.dataset.confirm;
+  if (confirmation && !window.confirm(confirmation)) {
+    event.preventDefault();
+    return;
+  }
+
+  if (form.dataset.deleteVideo === "" && form.dataset.deleteReady !== "1") {
+    event.preventDefault();
+    const player = document.querySelector("[data-player]");
+    if (player instanceof HTMLVideoElement) {
+      player.pause();
+      player.removeAttribute("src");
+      player.querySelectorAll("source").forEach((source) => source.removeAttribute("src"));
+      player.load();
+    }
+
+    const submitter = event.submitter;
+    if (submitter instanceof HTMLButtonElement) {
+      submitter.disabled = true;
+      submitter.dataset.originalText = submitter.textContent || "";
+      submitter.textContent = "Удаление...";
+    }
+
+    window.setTimeout(() => {
+      form.dataset.deleteReady = "1";
+      form.submit();
+    }, 300);
+    return;
+  }
+
+  if (form.dataset.uploadForm === "" && form.dataset.submitReady !== "1") {
+    event.preventDefault();
+    form.classList.add("is-uploading");
+
+    const submitter = event.submitter;
+    if (submitter instanceof HTMLButtonElement) {
+      submitter.disabled = true;
+      submitter.dataset.originalText = submitter.textContent || "";
+      submitter.textContent = "Загрузка...";
+    }
+
+    const minSubmitMs = Number(form.dataset.minSubmitMs || 1000);
+    window.setTimeout(() => {
+      form.dataset.submitReady = "1";
+      form.submit();
+    }, Number.isFinite(minSubmitMs) ? Math.max(minSubmitMs, 1000) : 1000);
+    return;
+  }
+
   const submitter = event.submitter;
   if (submitter instanceof HTMLButtonElement) {
     submitter.disabled = true;
@@ -11,6 +60,42 @@ document.addEventListener("submit", (event) => {
     submitter.textContent = "Подождите...";
   }
 });
+
+function initDropzones() {
+  document.querySelectorAll("[data-dropzone]").forEach((dropzone) => {
+    const input = dropzone.querySelector('input[type="file"]');
+    const fileName = dropzone.querySelector("[data-dropzone-name]");
+    if (!(input instanceof HTMLInputElement)) {
+      return;
+    }
+
+    function showFileName() {
+      if (fileName) {
+        fileName.textContent = input.files?.[0]?.name || "или выберите файл";
+      }
+    }
+
+    dropzone.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      dropzone.classList.add("is-dragover");
+    });
+
+    dropzone.addEventListener("dragleave", () => {
+      dropzone.classList.remove("is-dragover");
+    });
+
+    dropzone.addEventListener("drop", (event) => {
+      event.preventDefault();
+      dropzone.classList.remove("is-dragover");
+      if (event.dataTransfer?.files?.length) {
+        input.files = event.dataTransfer.files;
+        showFileName();
+      }
+    });
+
+    input.addEventListener("change", showFileName);
+  });
+}
 
 function formatTime(value) {
   if (!Number.isFinite(value)) {
@@ -341,4 +426,7 @@ function initWatchPlayer() {
   updateTimeline();
 }
 
-document.addEventListener("DOMContentLoaded", initWatchPlayer);
+document.addEventListener("DOMContentLoaded", () => {
+  initDropzones();
+  initWatchPlayer();
+});

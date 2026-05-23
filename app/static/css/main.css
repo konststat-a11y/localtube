@@ -165,6 +165,16 @@ select {
   background: var(--accent-dark);
 }
 
+.button.danger {
+  border-color: #b91c1c;
+  background: #b91c1c;
+  color: white;
+}
+
+.button.danger:hover {
+  background: #991b1b;
+}
+
 .button.ghost {
   min-height: 34px;
   background: transparent;
@@ -318,6 +328,84 @@ select {
   color: var(--muted);
   font-size: 24px;
   line-height: 1;
+}
+
+.upload-panel {
+  width: min(520px, 100%);
+}
+
+.dropzone {
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  min-height: 180px;
+  padding: 24px;
+  border: 2px dashed #94a3b8;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #334155;
+  text-align: center;
+  cursor: pointer;
+}
+
+.dropzone span {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.dropzone small {
+  color: var(--muted);
+}
+
+.dropzone input {
+  width: auto;
+}
+
+.dropzone.is-dragover {
+  border-color: var(--accent);
+  background: #fff1f2;
+}
+
+.upload-progress {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #fecdd3;
+  border-radius: 8px;
+  background: #fff1f2;
+  color: #9f1239;
+  font-weight: 700;
+}
+
+.upload-form.is-uploading .upload-progress {
+  display: flex;
+}
+
+.upload-form.is-uploading .dropzone,
+.upload-form.is-uploading input {
+  pointer-events: none;
+  opacity: 0.72;
+}
+
+.upload-spinner {
+  width: 18px;
+  height: 18px;
+  border: 3px solid #fecdd3;
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 800ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.card-actions,
+.watch-actions {
+  margin-top: 12px;
 }
 
 .login-page {
