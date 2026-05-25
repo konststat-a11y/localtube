@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}Локальный видеосайт{% endblock %}</title>
-    <link rel="stylesheet" href="{{ url_for('static', path='/css/main.css') }}?v=13">
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/main.css') }}?v=24">
   </head>
   <body>
     <header class="topbar">
@@ -16,6 +16,8 @@
         {% endif %}
       </nav>
       <div class="userbar">
+        <button type="button" class="button ghost shell-toggle" data-sidebar-toggle>Меню</button>
+        <button type="button" class="button ghost shell-toggle" data-theme-toggle>Тема</button>
         {% if user %}
           <a class="button" href="/?upload=1">Загрузить</a>
           <span>{{ user.username }}</span>
@@ -32,6 +34,6 @@
     <main class="{% block main_class %}page{% endblock %}">
       {% block content %}{% endblock %}
     </main>
-    <script src="{{ url_for('static', path='/js/app.js') }}?v=13"></script>
+    <script src="{{ url_for('static', path='/js/app.js') }}?v=24"></script>
   </body>
 </html>

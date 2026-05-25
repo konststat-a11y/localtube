@@ -1,3 +1,265 @@
+function initShellPreferences() {
+  const themeToggle = document.querySelector("[data-theme-toggle]");
+  const sidebarToggle = document.querySelector("[data-sidebar-toggle]");
+  const savedTheme = localStorage.getItem("localtube:theme") || "light";
+  const savedSidebar = localStorage.getItem("localtube:sidebarCollapsed") === "1";
+
+  function applyTheme(theme) {
+    document.body.dataset.theme = theme === "dark" ? "dark" : "light";
+    if (themeToggle) {
+      themeToggle.textContent = theme === "dark" ? "Светлая" : "Тёмная";
+    }
+  }
+
+  applyTheme(savedTheme);
+  document.body.classList.toggle("sidebar-collapsed", savedSidebar);
+  if (sidebarToggle) {
+    sidebarToggle.textContent = savedSidebar ? "Показать меню" : "Скрыть меню";
+  }
+
+  themeToggle?.addEventListener("click", () => {
+    const nextTheme = document.body.dataset.theme === "dark" ? "light" : "dark";
+    localStorage.setItem("localtube:theme", nextTheme);
+    applyTheme(nextTheme);
+  });
+
+  sidebarToggle?.addEventListener("click", () => {
+    const collapsed = !document.body.classList.contains("sidebar-collapsed");
+    document.body.classList.toggle("sidebar-collapsed", collapsed);
+    localStorage.setItem("localtube:sidebarCollapsed", collapsed ? "1" : "0");
+    sidebarToggle.textContent = collapsed ? "Показать меню" : "Скрыть меню";
+  });
+}
+
+function initShareButtons() {
+  document.querySelectorAll("[data-share-button]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const url = button.dataset.shareUrl || window.location.href;
+      try {
+        if (navigator.share) {
+          await navigator.share({ title: document.title, url });
+        } else if (navigator.clipboard) {
+          await navigator.clipboard.writeText(url);
+          button.textContent = "Ссылка скопирована";
+          window.setTimeout(() => {
+            button.textContent = "Поделиться";
+          }, 1600);
+        }
+      } catch (error) {
+        console.warn(error);
+      }
+    });
+  });
+}
+
+async function submitAjaxForm(form, submitter) {
+  const data = new FormData(form);
+  const response = await fetch(form.action, {
+    method: form.method || "POST",
+    body: data,
+    headers: {
+      "X-Requested-With": "XMLHttpRequest",
+      "Accept": "application/json",
+    },
+  });
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+function setButtonBusy(button, busy) {
+  if (!(button instanceof HTMLButtonElement)) {
+    return;
+  }
+  button.disabled = busy;
+}
+
+function playButtonAnimation(button) {
+  if (!(button instanceof HTMLElement)) {
+    return;
+  }
+  button.classList.remove("is-feedback");
+  void button.offsetWidth;
+  button.classList.add("is-feedback");
+}
+
+function playCommentAnimation(comment) {
+  comment.classList.add("is-new");
+  window.setTimeout(() => {
+    comment.classList.remove("is-new");
+  }, 700);
+}
+
+function createCommentElement(comment) {
+  const article = document.createElement("article");
+  article.className = "comment";
+  article.dataset.commentId = String(comment.id);
+
+  const head = document.createElement("div");
+  head.className = "comment-head";
+
+  const authorBlock = document.createElement("span");
+  const author = document.createElement("strong");
+  author.textContent = comment.username;
+  const createdAt = document.createElement("small");
+  createdAt.textContent = comment.created_at;
+  authorBlock.append(author, createdAt);
+  head.append(authorBlock);
+
+  if (comment.can_delete) {
+    const deleteForm = document.createElement("form");
+    deleteForm.action = `/comments/${comment.id}/delete`;
+    deleteForm.method = "post";
+    deleteForm.dataset.confirm = "Удалить комментарий?";
+    deleteForm.dataset.commentDeleteForm = "";
+    const deleteButton = document.createElement("button");
+    deleteButton.type = "submit";
+    deleteButton.className = "button ghost small-button";
+    deleteButton.textContent = "Удалить";
+    deleteForm.append(deleteButton);
+    head.append(deleteForm);
+  }
+
+  const body = document.createElement("p");
+  body.textContent = comment.body;
+  article.append(head, body);
+  return article;
+}
+
+function resizeTextareaToContent(textarea) {
+  textarea.style.height = "auto";
+  textarea.style.height = `${textarea.scrollHeight}px`;
+}
+
+function initWatchAjaxActions() {
+  const watchPage = document.querySelector("[data-watch-page]");
+  if (!watchPage) {
+    return;
+  }
+
+  watchPage.querySelectorAll("[data-reaction-form]").forEach((form) => {
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const button = event.submitter;
+      setButtonBusy(button, true);
+      try {
+        const result = await submitAjaxForm(form, button);
+        const likeButton = watchPage.querySelector("[data-like-button]");
+        const dislikeButton = watchPage.querySelector("[data-dislike-button]");
+        const likeCount = watchPage.querySelector("[data-like-count]");
+        const dislikeCount = watchPage.querySelector("[data-dislike-count]");
+        if (likeCount) {
+          likeCount.textContent = String(result.likes_count);
+        }
+        if (dislikeCount) {
+          dislikeCount.textContent = String(result.dislikes_count);
+        }
+        likeButton?.classList.toggle("primary", result.user_reaction === 1);
+        dislikeButton?.classList.toggle("primary", result.user_reaction === -1);
+        playButtonAnimation(button);
+      } catch (error) {
+        console.warn(error);
+      } finally {
+        setButtonBusy(button, false);
+      }
+    });
+  });
+
+  watchPage.querySelectorAll("[data-watch-later-form]").forEach((form) => {
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const button = event.submitter;
+      setButtonBusy(button, true);
+      try {
+        const result = await submitAjaxForm(form, button);
+        if (button instanceof HTMLButtonElement) {
+          button.textContent = result.label;
+          button.classList.toggle("primary", Boolean(result.in_watch_later));
+        }
+      } catch (error) {
+        console.warn(error);
+      } finally {
+        setButtonBusy(button, false);
+      }
+    });
+  });
+
+  const commentForm = watchPage.querySelector("[data-comment-form]");
+  const commentTextarea = commentForm?.querySelector("textarea");
+  if (commentTextarea instanceof HTMLTextAreaElement) {
+    resizeTextareaToContent(commentTextarea);
+    commentTextarea.addEventListener("input", () => resizeTextareaToContent(commentTextarea));
+  }
+
+  commentForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const form = event.currentTarget;
+    const button = event.submitter;
+    if (!(form instanceof HTMLFormElement)) {
+      return;
+    }
+    setButtonBusy(button, true);
+    try {
+      const result = await submitAjaxForm(form, button);
+      const list = watchPage.querySelector("[data-comment-list]");
+      const empty = watchPage.querySelector("[data-empty-comments]");
+      if (list && result.comment) {
+        const comment = createCommentElement(result.comment);
+        list.append(comment);
+        playCommentAnimation(comment);
+      }
+      if (empty instanceof HTMLElement) {
+        empty.hidden = true;
+      }
+      form.reset();
+      const textarea = form.querySelector("textarea");
+      if (textarea instanceof HTMLTextAreaElement) {
+        resizeTextareaToContent(textarea);
+        textarea.focus();
+      }
+    } catch (error) {
+      console.warn(error);
+    } finally {
+      setButtonBusy(button, false);
+    }
+  });
+
+  watchPage.addEventListener("submit", async (event) => {
+    const form = event.target;
+    if (!(form instanceof HTMLFormElement) || form.dataset.commentDeleteForm !== "") {
+      return;
+    }
+    const confirmation = form.dataset.confirm;
+    if (confirmation && !window.confirm(confirmation)) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    const button = event.submitter;
+    setButtonBusy(button, true);
+    try {
+      const result = await submitAjaxForm(form, button);
+      const comment = watchPage.querySelector(`[data-comment-id="${result.comment_id}"]`);
+      comment?.remove();
+      const list = watchPage.querySelector("[data-comment-list]");
+      const empty = watchPage.querySelector("[data-empty-comments]");
+      if (empty instanceof HTMLElement && list && !list.querySelector(".comment")) {
+        empty.hidden = false;
+      }
+    } catch (error) {
+      console.warn(error);
+    } finally {
+      setButtonBusy(button, false);
+    }
+  });
+}
+
 document.addEventListener("submit", (event) => {
   const form = event.target;
   if (!(form instanceof HTMLFormElement)) {
@@ -65,14 +327,32 @@ function initDropzones() {
   document.querySelectorAll("[data-dropzone]").forEach((dropzone) => {
     const input = dropzone.querySelector('input[type="file"]');
     const fileName = dropzone.querySelector("[data-dropzone-name]");
+    const maxFileBaseLength = 16;
     if (!(input instanceof HTMLInputElement)) {
       return;
     }
 
+    function shortenFileName(name) {
+      const dotIndex = name.lastIndexOf(".");
+      const extension = dotIndex > 0 ? name.slice(dotIndex) : "";
+      const baseName = dotIndex > 0 ? name.slice(0, dotIndex) : name;
+      if (baseName.length <= maxFileBaseLength) {
+        return name;
+      }
+      return `${baseName.slice(0, maxFileBaseLength)}...${extension}`;
+    }
+
     function showFileName() {
       if (fileName) {
-        fileName.textContent = input.files?.[0]?.name || "или выберите файл";
+        const selectedName = input.files?.[0]?.name || "";
+        fileName.textContent = selectedName ? shortenFileName(selectedName) : "или выберите файл";
+        if (selectedName) {
+          fileName.setAttribute("title", selectedName);
+        } else {
+          fileName.removeAttribute("title");
+        }
       }
+      dropzone.classList.toggle("has-file", Boolean(input.files?.length));
     }
 
     dropzone.addEventListener("dragover", (event) => {
@@ -427,6 +707,9 @@ function initWatchPlayer() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  initShellPreferences();
+  initShareButtons();
   initDropzones();
+  initWatchAjaxActions();
   initWatchPlayer();
 });

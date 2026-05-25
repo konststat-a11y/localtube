@@ -17,6 +17,8 @@
 - Accept large user uploads up to 10 GB while saving files in chunks.
 - Transcode uploaded H.265/HEVC files to browser-compatible H.264/AAC MP4 with ffmpeg.
 - Generate video card thumbnails from the first frame with ffmpeg.
+- Add theme switching and collapsible home sidebar.
+- Add per-account view history, watch later, liked videos, reactions, comments, and share controls.
 - Redirect successful uploads to the new watch page.
 - Show upload animation for at least one second after submit.
 - Let admins and video authors delete videos.
@@ -60,6 +62,12 @@
 - Another regular user can see and stream the uploaded video.
 - H.265/HEVC `.mp4`, `.m4v`, `.mov`, and `.mkv` uploads are accepted as input and saved as browser-compatible `.mp4`.
 - Uploaded and scanned videos get a JPEG thumbnail in `video_storage/thumbnails/`.
+- Users can open and clear history, add videos to watch later, like/dislike, comment, and share a watch URL.
+- Like/dislike reactions are mutually exclusive toggles; watch later can be toggled from the watch page.
+- Watch page reactions, watch later, and comments update through AJAX without full page reload while preserving POST fallback.
+- Related videos on the watch page use generated thumbnails.
+- Users can delete their own comments; admins and video authors can moderate comments.
+- Home page no longer shows delete buttons on video cards.
 - Other regular users cannot delete someone else's video.
 - Admin and author can delete a video.
 - Existing admin can still open `/admin`.

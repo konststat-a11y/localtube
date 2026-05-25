@@ -6,15 +6,28 @@
   <div class="layout">
     <aside class="sidebar">
       <h2>Категории</h2>
-      <a class="category-link {% if not current_category %}active{% endif %}" href="/?sort={{ sort }}&order={{ order }}">Все</a>
+      <a class="category-link {% if not current_category and not current_section %}active{% endif %}" href="/?sort={{ sort }}&order={{ order }}">Все</a>
       {% for category in categories %}
-        <a class="category-link {% if current_category == category %}active{% endif %}" href="/?category={{ category | urlencode }}&sort={{ sort }}&order={{ order }}">{{ category }}</a>
+        <a class="category-link {% if current_category == category and not current_section %}active{% endif %}" href="/?category={{ category | urlencode }}&sort={{ sort }}&order={{ order }}">{{ category }}</a>
       {% endfor %}
+      {% if user %}
+        <div class="sidebar-section">
+          <h2>Мои видео</h2>
+          <a class="category-link {% if current_section == 'history' %}active{% endif %}" href="/?section=history">История просмотров</a>
+          <a class="category-link {% if current_section == 'watch_later' %}active{% endif %}" href="/?section=watch_later">Смотреть позже</a>
+          <a class="category-link {% if current_section == 'liked' %}active{% endif %}" href="/?section=liked">Понравившиеся видео</a>
+        </div>
+      {% endif %}
     </aside>
 
     <section class="content">
       <div class="toolbar">
-        <h1>{% if user %}Доступные видео{% else %}Файлы{% endif %}</h1>
+        <h1>{% if section_title %}{{ section_title }}{% elif user %}Доступные видео{% else %}Файлы{% endif %}</h1>
+        {% if current_section == "history" %}
+          <form action="/history/clear" method="post" class="filters" data-confirm="Очистить историю просмотров?">
+            <button type="submit" class="button">Очистить историю</button>
+          </form>
+        {% else %}
         <form method="get" class="filters">
           {% if current_category %}
             <input type="hidden" name="category" value="{{ current_category }}">
@@ -29,6 +42,7 @@
           </select>
           <button type="submit" class="button">Применить</button>
         </form>
+        {% endif %}
       </div>
 
       {% if videos %}
@@ -44,12 +58,15 @@
                 <h2><a href="{{ video_href }}">{{ video.title }}</a></h2>
                 <p class="muted">{{ video.author or "Автор не указан" }}</p>
                 <p class="meta">{{ video.category }} · {{ video.created_at | datetime }} · {{ video.size_bytes | bytes }}</p>
-                {% if user and (user.is_admin or video.author == user.username) %}
-                  <form action="/videos/{{ video.id }}/delete" method="post" class="card-actions" data-confirm="Удалить видео «{{ video.title }}»?" data-delete-video>
-                    <button type="submit" class="button danger">Удалить</button>
-                  </form>
-                {% elif not user %}
+                {% if not user %}
                   <p class="meta">Войдите, чтобы открыть видео.</p>
+                {% else %}
+                  <form action="/videos/{{ video.id }}/watch-later" method="post" class="card-actions">
+                    <input type="hidden" name="next" value="{{ request.url.path }}{% if request.url.query %}?{{ request.url.query }}{% endif %}">
+                    <button type="submit" class="button small-button {% if video.id in watch_later_ids %}primary{% endif %}">
+                      {% if video.id in watch_later_ids %}Убрать из «Смотреть позже»{% else %}Добавить в Смотреть позже{% endif %}
+                    </button>
+                  </form>
                 {% endif %}
               </div>
             </article>

@@ -76,11 +76,58 @@
             <button type="submit" class="button danger">Удалить видео</button>
           </form>
         {% endif %}
+        <div class="watch-action-row">
+          <form action="/videos/{{ video.id }}/reaction" method="post" data-reaction-form>
+            <input type="hidden" name="value" value="1">
+            <button type="submit" class="button {% if user_reaction == 1 %}primary{% endif %}" data-like-button>
+              Нравится <span data-like-count>{{ likes_count }}</span>
+            </button>
+          </form>
+          <form action="/videos/{{ video.id }}/reaction" method="post" data-reaction-form>
+            <input type="hidden" name="value" value="-1">
+            <button type="submit" class="button {% if user_reaction == -1 %}primary{% endif %}" data-dislike-button>
+              Не нравится <span data-dislike-count>{{ dislikes_count }}</span>
+            </button>
+          </form>
+          <form action="/videos/{{ video.id }}/watch-later" method="post" data-watch-later-form>
+            <button type="submit" class="button {% if in_watch_later %}primary{% endif %}" data-watch-later-button>
+              {% if in_watch_later %}Убрать из «Смотреть позже»{% else %}Смотреть позже{% endif %}
+            </button>
+          </form>
+          <button type="button" class="button" data-share-button data-share-url="{{ request.url }}">Поделиться</button>
+        </div>
         {% if video.description %}
           <p>{{ video.description }}</p>
         {% else %}
           <p class="muted">Описание не добавлено.</p>
         {% endif %}
+
+        <section class="comments" id="comments">
+          <h2>Комментарии</h2>
+          <form action="/videos/{{ video.id }}/comments" method="post" class="comment-form" data-comment-form>
+            <textarea name="body" rows="3" maxlength="2000" placeholder="Добавить комментарий" required></textarea>
+            <button type="submit" class="button primary">Отправить</button>
+          </form>
+          <div class="comment-list" data-comment-list>
+            {% for comment in comments %}
+              <article class="comment" data-comment-id="{{ comment.id }}">
+                <div class="comment-head">
+                  <span>
+                    <strong>{{ comment.user.username }}</strong>
+                    <small>{{ comment.created_at | datetime }}</small>
+                  </span>
+                  {% if user and (user.is_admin or comment.user_id == user.id or video.author == user.username) %}
+                    <form action="/comments/{{ comment.id }}/delete" method="post" data-confirm="Удалить комментарий?" data-comment-delete-form>
+                      <button type="submit" class="button ghost small-button">Удалить</button>
+                    </form>
+                  {% endif %}
+                </div>
+                <p>{{ comment.body }}</p>
+              </article>
+            {% endfor %}
+          </div>
+          <p class="muted" data-empty-comments {% if comments %}hidden{% endif %}>Комментариев пока нет.</p>
+        </section>
       </div>
 
       <aside class="recommendations" aria-label="Рекомендации" data-recommendations>
@@ -97,6 +144,7 @@
             {% for item in related_videos %}
               <a class="recommendation-card" href="/watch/{{ item.id }}">
                 <span class="recommendation-thumb" aria-hidden="true">
+                  <img src="/videos/{{ item.id }}/thumbnail" alt="" loading="lazy" onerror="this.remove()">
                   <span>{{ item.title[:1] | upper }}</span>
                 </span>
                 <span class="recommendation-info">

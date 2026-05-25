@@ -9,7 +9,7 @@ from threading import Event, Lock, Thread
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, Request, UploadFile, status
-from fastapi.responses import FileResponse, RedirectResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, StreamingResponse
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import asc, desc, func
 from sqlalchemy.orm import Session
@@ -26,7 +26,7 @@ from .config import (
     VIDEO_STORAGE_DIR,
 )
 from .database import SessionLocal, get_db
-from .models import User, Video, VideoAccess
+from .models import Comment, User, Video, VideoAccess, VideoReaction, ViewHistory, WatchLater
 
 
 router = APIRouter()
@@ -132,6 +132,60 @@ def accessible_videos_query(db: Session, user: User):
 
 def public_videos_query(db: Session):
     return db.query(Video).filter(Video.is_available.is_(True))
+
+
+def ensure_video_access(db: Session, user: User, video_id: int) -> Video:
+    video = db.query(Video).filter(Video.id == video_id, Video.is_available.is_(True)).first()
+    if video is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    if not user_can_access_video(db, user, video):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+    return video
+
+
+def record_view_history(db: Session, user: User, video: Video) -> None:
+    entry = (
+        db.query(ViewHistory)
+        .filter(ViewHistory.user_id == user.id, ViewHistory.video_id == video.id)
+        .first()
+    )
+    if entry is None:
+        db.add(ViewHistory(user_id=user.id, video_id=video.id, viewed_at=datetime.utcnow()))
+    else:
+        entry.viewed_at = datetime.utcnow()
+    db.commit()
+
+
+def user_has_watch_later(db: Session, user: User, video: Video) -> bool:
+    return (
+        db.query(WatchLater.id)
+        .filter(WatchLater.user_id == user.id, WatchLater.video_id == video.id)
+        .first()
+        is not None
+    )
+
+
+def get_user_reaction(db: Session, user: User, video: Video) -> int:
+    reaction = (
+        db.query(VideoReaction)
+        .filter(VideoReaction.user_id == user.id, VideoReaction.video_id == video.id)
+        .first()
+    )
+    return reaction.value if reaction else 0
+
+
+def get_reaction_counts(db: Session, video: Video) -> tuple[int, int]:
+    likes = (
+        db.query(VideoReaction)
+        .filter(VideoReaction.video_id == video.id, VideoReaction.value == 1)
+        .count()
+    )
+    dislikes = (
+        db.query(VideoReaction)
+        .filter(VideoReaction.video_id == video.id, VideoReaction.value == -1)
+        .count()
+    )
+    return likes, dislikes
 
 
 def resolve_storage_path(path: Path) -> Path:
@@ -310,6 +364,22 @@ def delete_video_thumbnail(video_id: int) -> None:
         pass
 
 
+def safe_redirect_path(path: str | None, fallback: str = "/") -> str:
+    if path and path.startswith("/") and not path.startswith("//"):
+        return path
+    return fallback
+
+
+def wants_json(request: Request) -> bool:
+    return request.headers.get("x-requested-with") == "XMLHttpRequest"
+
+
+def format_datetime_for_json(value: datetime | None) -> str:
+    if not value:
+        return ""
+    return value.strftime("%d.%m.%Y %H:%M")
+
+
 def grant_video_access_to_regular_users(db: Session, video_id: int) -> None:
     user_ids = [row[0] for row in db.query(User.id).filter(User.is_admin.is_(False)).all()]
     for user_id in user_ids:
@@ -421,6 +491,7 @@ def index(
     request: Request,
     db: Annotated[Session, Depends(get_db)],
     category: Annotated[str | None, Query()] = None,
+    section: Annotated[str | None, Query(pattern="^(history|watch_later|liked)$")] = None,
     login: Annotated[bool, Query()] = False,
     sort: Annotated[str, Query(pattern="^(title|date)$")] = "date",
     order: Annotated[str, Query(pattern="^(asc|desc)$")] = "desc",
@@ -440,10 +511,50 @@ def index(
         if row[0]
     ]
 
-    query = base_query
-    if category:
-        query = query.filter(Video.category == category)
-    videos = apply_video_sort(query, sort, order).all()
+    section_title = None
+    if section and user is None:
+        return redirect_to_login()
+    if section == "history":
+        section_title = "История просмотров"
+        videos = (
+            accessible_videos_query(db, user)
+            .join(ViewHistory, ViewHistory.video_id == Video.id)
+            .filter(ViewHistory.user_id == user.id)
+            .order_by(desc(ViewHistory.viewed_at))
+            .all()
+        )
+    elif section == "watch_later":
+        section_title = "Смотреть позже"
+        videos = (
+            accessible_videos_query(db, user)
+            .join(WatchLater, WatchLater.video_id == Video.id)
+            .filter(WatchLater.user_id == user.id)
+            .order_by(desc(WatchLater.created_at))
+            .all()
+        )
+    elif section == "liked":
+        section_title = "Понравившиеся видео"
+        videos = (
+            accessible_videos_query(db, user)
+            .join(VideoReaction, VideoReaction.video_id == Video.id)
+            .filter(VideoReaction.user_id == user.id, VideoReaction.value == 1)
+            .order_by(desc(VideoReaction.updated_at))
+            .all()
+        )
+    else:
+        query = base_query
+        if category:
+            query = query.filter(Video.category == category)
+        videos = apply_video_sort(query, sort, order).all()
+
+    watch_later_ids: set[int] = set()
+    if user is not None:
+        watch_later_ids = {
+            row[0]
+            for row in db.query(WatchLater.video_id)
+            .filter(WatchLater.user_id == user.id)
+            .all()
+        }
 
     return request.app.state.templates.TemplateResponse(
         request=request,
@@ -454,10 +565,13 @@ def index(
             "videos": videos,
             "categories": categories,
             "current_category": category,
+            "current_section": section,
+            "section_title": section_title,
             "show_login": login and user is None,
             "show_upload": request.query_params.get("upload") == "1" and user is not None,
             "sort": sort,
             "order": order,
+            "watch_later_ids": watch_later_ids,
         },
     )
 
@@ -553,6 +667,142 @@ def video_thumbnail(
     return FileResponse(thumbnail_path, media_type="image/jpeg")
 
 
+@router.post("/history/clear")
+def clear_history(
+    user: Annotated[User, Depends(require_user)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    db.query(ViewHistory).filter(ViewHistory.user_id == user.id).delete()
+    db.commit()
+    return RedirectResponse(url="/?section=history", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/videos/{video_id}/watch-later")
+def toggle_watch_later(
+    request: Request,
+    video_id: int,
+    user: Annotated[User, Depends(require_user)],
+    db: Annotated[Session, Depends(get_db)],
+    next_url: Annotated[str | None, Form(alias="next")] = None,
+):
+    video = ensure_video_access(db, user, video_id)
+    entry = (
+        db.query(WatchLater)
+        .filter(WatchLater.user_id == user.id, WatchLater.video_id == video.id)
+        .first()
+    )
+    if entry is None:
+        db.add(WatchLater(user_id=user.id, video_id=video.id))
+        in_watch_later = True
+    else:
+        db.delete(entry)
+        in_watch_later = False
+    db.commit()
+    if wants_json(request):
+        return JSONResponse(
+            {
+                "in_watch_later": in_watch_later,
+                "label": "Убрать из «Смотреть позже»" if in_watch_later else "Смотреть позже",
+            }
+        )
+    return RedirectResponse(
+        url=safe_redirect_path(next_url, f"/watch/{video.id}"),
+        status_code=status.HTTP_303_SEE_OTHER,
+    )
+
+
+@router.post("/videos/{video_id}/reaction")
+def set_video_reaction(
+    request: Request,
+    video_id: int,
+    user: Annotated[User, Depends(require_user)],
+    db: Annotated[Session, Depends(get_db)],
+    value: Annotated[int, Form()],
+):
+    video = ensure_video_access(db, user, video_id)
+    if value not in (-1, 1):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
+
+    reaction = (
+        db.query(VideoReaction)
+        .filter(VideoReaction.user_id == user.id, VideoReaction.video_id == video.id)
+        .first()
+    )
+    if reaction is None:
+        db.add(VideoReaction(user_id=user.id, video_id=video.id, value=value))
+    elif reaction.value == value:
+        db.delete(reaction)
+    else:
+        reaction.value = value
+        reaction.updated_at = datetime.utcnow()
+    db.commit()
+    likes_count, dislikes_count = get_reaction_counts(db, video)
+    user_reaction = get_user_reaction(db, user, video)
+    if wants_json(request):
+        return JSONResponse(
+            {
+                "likes_count": likes_count,
+                "dislikes_count": dislikes_count,
+                "user_reaction": user_reaction,
+            }
+        )
+    return RedirectResponse(url=f"/watch/{video.id}", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/videos/{video_id}/comments")
+def add_comment(
+    request: Request,
+    video_id: int,
+    user: Annotated[User, Depends(require_user)],
+    db: Annotated[Session, Depends(get_db)],
+    body: Annotated[str, Form()],
+):
+    video = ensure_video_access(db, user, video_id)
+    body = body.strip()
+    if not body:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
+    comment = Comment(user_id=user.id, video_id=video.id, body=body[:2000])
+    db.add(comment)
+    db.commit()
+    db.refresh(comment)
+    if wants_json(request):
+        return JSONResponse(
+            {
+                "comment": {
+                    "id": comment.id,
+                    "username": user.username,
+                    "body": comment.body,
+                    "created_at": format_datetime_for_json(comment.created_at),
+                    "can_delete": True,
+                }
+            }
+        )
+    return RedirectResponse(url=f"/watch/{video.id}#comments", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/comments/{comment_id}/delete")
+def delete_comment(
+    request: Request,
+    comment_id: int,
+    user: Annotated[User, Depends(require_user)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    comment = db.query(Comment).filter(Comment.id == comment_id).first()
+    if comment is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    video = db.query(Video).filter(Video.id == comment.video_id).first()
+    if video is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    if comment.user_id != user.id and not user.is_admin and video.author != user.username:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+    video_id = comment.video_id
+    db.delete(comment)
+    db.commit()
+    if wants_json(request):
+        return JSONResponse({"deleted": True, "comment_id": comment_id})
+    return RedirectResponse(url=f"/watch/{video_id}#comments", status_code=status.HTTP_303_SEE_OTHER)
+
+
 
 @router.post("/videos/{video_id}/delete")
 def delete_video(
@@ -609,6 +859,7 @@ def watch_video(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     if not user_can_access_video(db, user, video):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+    record_view_history(db, user, video)
 
     accessible_ids = [item.id for item in accessible_videos_query(db, user).order_by(asc(Video.id)).all()]
     current_index = accessible_ids.index(video.id)
@@ -622,6 +873,13 @@ def watch_video(
         .all()
     )
     autoplay_id = next_id or (related_videos[0].id if related_videos else None)
+    likes_count, dislikes_count = get_reaction_counts(db, video)
+    comments = (
+        db.query(Comment)
+        .filter(Comment.video_id == video.id)
+        .order_by(asc(Comment.created_at))
+        .all()
+    )
 
     return request.app.state.templates.TemplateResponse(
         request=request,
@@ -635,6 +893,11 @@ def watch_video(
             "autoplay_id": autoplay_id,
             "can_delete": user_can_delete_video(user, video),
             "related_videos": related_videos,
+            "likes_count": likes_count,
+            "dislikes_count": dislikes_count,
+            "user_reaction": get_user_reaction(db, user, video),
+            "in_watch_later": user_has_watch_later(db, user, video),
+            "comments": comments,
         },
     )
 

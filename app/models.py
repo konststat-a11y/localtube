@@ -54,3 +54,57 @@ class VideoAccess(Base):
 
     user = relationship("User", back_populates="access_entries")
     video = relationship("Video", back_populates="access_entries")
+
+
+class ViewHistory(Base):
+    __tablename__ = "view_history"
+    __table_args__ = (UniqueConstraint("user_id", "video_id", name="uq_user_video_history"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    video_id = Column(Integer, ForeignKey("videos.id"), nullable=False, index=True)
+    viewed_at = Column(DateTime, nullable=False, default=datetime.utcnow, index=True)
+
+    user = relationship("User")
+    video = relationship("Video")
+
+
+class WatchLater(Base):
+    __tablename__ = "watch_later"
+    __table_args__ = (UniqueConstraint("user_id", "video_id", name="uq_user_video_watch_later"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    video_id = Column(Integer, ForeignKey("videos.id"), nullable=False, index=True)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow, index=True)
+
+    user = relationship("User")
+    video = relationship("Video")
+
+
+class VideoReaction(Base):
+    __tablename__ = "video_reactions"
+    __table_args__ = (UniqueConstraint("user_id", "video_id", name="uq_user_video_reaction"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    video_id = Column(Integer, ForeignKey("videos.id"), nullable=False, index=True)
+    value = Column(Integer, nullable=False)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user = relationship("User")
+    video = relationship("Video")
+
+
+class Comment(Base):
+    __tablename__ = "comments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    video_id = Column(Integer, ForeignKey("videos.id"), nullable=False, index=True)
+    body = Column(Text, nullable=False)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow, index=True)
+
+    user = relationship("User")
+    video = relationship("Video")
