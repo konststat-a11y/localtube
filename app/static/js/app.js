@@ -5,9 +5,11 @@ function initShellPreferences() {
   const savedSidebar = localStorage.getItem("localtube:sidebarCollapsed") === "1";
 
   function applyTheme(theme) {
-    document.body.dataset.theme = theme === "dark" ? "dark" : "light";
+    const normalizedTheme = theme === "dark" ? "dark" : "light";
+    document.documentElement.dataset.theme = normalizedTheme;
+    document.body.dataset.theme = normalizedTheme;
     if (themeToggle) {
-      const isDark = theme === "dark";
+      const isDark = normalizedTheme === "dark";
       themeToggle.setAttribute("aria-pressed", isDark ? "true" : "false");
       themeToggle.setAttribute("aria-label", isDark ? "Включить светлую тему" : "Включить тёмную тему");
       themeToggle.setAttribute("title", isDark ? "Включить светлую тему" : "Включить тёмную тему");
@@ -35,6 +37,37 @@ function initShellPreferences() {
     sidebarToggle.setAttribute("aria-pressed", collapsed ? "true" : "false");
     sidebarToggle.setAttribute("aria-label", collapsed ? "Показать меню" : "Скрыть меню");
     sidebarToggle.setAttribute("title", collapsed ? "Показать меню" : "Скрыть меню");
+  });
+}
+
+function initAccountMenu() {
+  const menu = document.querySelector("[data-account-menu]");
+  const toggle = menu?.querySelector("[data-account-menu-toggle]");
+  if (!(menu instanceof HTMLElement) || !(toggle instanceof HTMLButtonElement)) {
+    return;
+  }
+
+  function setOpen(open) {
+    menu.classList.toggle("is-open", open);
+    toggle.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+
+  toggle.addEventListener("click", (event) => {
+    event.stopPropagation();
+    setOpen(!menu.classList.contains("is-open"));
+  });
+
+  document.addEventListener("click", (event) => {
+    if (!menu.contains(event.target)) {
+      setOpen(false);
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      setOpen(false);
+      toggle.focus();
+    }
   });
 }
 
@@ -833,6 +866,7 @@ function initWatchPlayer() {
 
 document.addEventListener("DOMContentLoaded", () => {
   initShellPreferences();
+  initAccountMenu();
   initShareButtons();
   initDropzones();
   initVideoCards();

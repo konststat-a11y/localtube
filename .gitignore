@@ -5,3 +5,4 @@ app.db
 *.log
 video_storage/
 tools/
+app/static/uploads/

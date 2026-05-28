@@ -70,7 +70,28 @@
 
       <div class="video-details">
         <h1>{{ video.title }}</h1>
-        <p class="meta">{{ video.author or "Автор не указан" }} · {{ video.category }} · {{ video.created_at | datetime }} · {{ video.size_bytes | bytes }}</p>
+        {% if video.author %}
+          {% set author_profile = author_profiles.get(video.author) if author_profiles is defined else none %}
+          {% set author_name = author_profile.display_name if author_profile and author_profile.display_name else video.author %}
+          <a class="watch-author" href="/users/{{ video.author | urlencode }}">
+            <span class="author-avatar">
+              {% if author_profile and author_profile.avatar_path %}
+                <img src="/static/uploads/avatars/{{ author_profile.avatar_path }}" alt="">
+              {% else %}
+                <span>{{ author_name[:1] | upper }}</span>
+              {% endif %}
+            </span>
+            <span>
+              <strong>{{ author_name }}</strong>
+              {% if author_name != video.author %}
+                <small>@{{ video.author }}</small>
+              {% endif %}
+            </span>
+          </a>
+        {% else %}
+          <p class="meta">Автор не указан</p>
+        {% endif %}
+        <p class="meta">{{ video.category }} · {{ video.created_at | datetime }} · {{ video.size_bytes | bytes }}</p>
         {% if can_delete %}
           <form action="/videos/{{ video.id }}/delete" method="post" class="watch-actions" data-confirm="Удалить видео «{{ video.title }}»?" data-delete-video>
             <button type="submit" class="button danger">Удалить видео</button>
@@ -142,6 +163,8 @@
         {% if related_videos %}
           <div class="recommendation-list">
             {% for item in related_videos %}
+              {% set item_author_profile = author_profiles.get(item.author) if author_profiles is defined and item.author else none %}
+              {% set item_author_name = item_author_profile.display_name if item_author_profile and item_author_profile.display_name else item.author %}
               <a class="recommendation-card" href="/watch/{{ item.id }}">
                 <span class="recommendation-thumb" aria-hidden="true">
                   <img src="/videos/{{ item.id }}/thumbnail" alt="" loading="lazy" onerror="this.remove()">
@@ -149,7 +172,7 @@
                 </span>
                 <span class="recommendation-info">
                   <strong>{{ item.title }}</strong>
-                  <small>{{ item.author or "Автор не указан" }}</small>
+                  <small>{{ item_author_name or "Автор не указан" }}</small>
                 </span>
               </a>
             {% endfor %}

@@ -4,9 +4,11 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
-from . import admin, auth, models, videos
-from .config import SESSION_SECRET_KEY, STATIC_DIR, TEMPLATE_DIR, VIDEO_STORAGE_DIR
-from .database import Base, SessionLocal, engine
+from . import admin, auth, models, profile, videos
+from .config import PROFILE_AVATAR_DIR, SESSION_SECRET_KEY, STATIC_DIR, TEMPLATE_DIR, VIDEO_STORAGE_DIR
+from .database import SessionLocal
+from .migration_runner import run_database_migrations
+from .models import UserProfile
 
 
 def format_bytes(value: int) -> str:
@@ -24,6 +26,26 @@ def format_datetime(value) -> str:
     return value.strftime("%d.%m.%Y %H:%M")
 
 
+def inject_current_profile(request: Request) -> dict:
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return {"current_profile": None}
+
+    db = SessionLocal()
+    try:
+        profile = db.query(UserProfile).filter(UserProfile.user_id == user_id).first()
+        if profile is None:
+            return {"current_profile": None}
+        return {
+            "current_profile": {
+                "display_name": profile.display_name,
+                "avatar_path": profile.avatar_path,
+            }
+        }
+    finally:
+        db.close()
+
+
 def create_app() -> FastAPI:
     app = FastAPI(title="Локальный видеосайт")
     app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET_KEY, same_site="lax")
@@ -31,17 +53,20 @@ def create_app() -> FastAPI:
     templates = Jinja2Templates(directory=str(TEMPLATE_DIR))
     templates.env.filters["bytes"] = format_bytes
     templates.env.filters["datetime"] = format_datetime
+    templates.context_processors.append(inject_current_profile)
     app.state.templates = templates
 
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
     app.include_router(auth.router)
     app.include_router(videos.router)
+    app.include_router(profile.router)
     app.include_router(admin.router)
 
     @app.on_event("startup")
     def startup() -> None:
         VIDEO_STORAGE_DIR.mkdir(parents=True, exist_ok=True)
-        Base.metadata.create_all(bind=engine)
+        PROFILE_AVATAR_DIR.mkdir(parents=True, exist_ok=True)
+        run_database_migrations()
         db = SessionLocal()
         try:
             auth.ensure_initial_admin(db)

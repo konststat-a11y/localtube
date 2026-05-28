@@ -26,7 +26,7 @@ from .config import (
     VIDEO_STORAGE_DIR,
 )
 from .database import SessionLocal, get_db
-from .models import Comment, User, Video, VideoAccess, VideoProgress, VideoReaction, ViewHistory, WatchLater
+from .models import Comment, User, UserProfile, Video, VideoAccess, VideoProgress, VideoReaction, ViewHistory, WatchLater
 
 
 router = APIRouter()
@@ -182,6 +182,19 @@ def get_video_progress_map(db: Session, user: User | None, videos: list[Video]) 
         .all()
     )
     return {progress.video_id: progress for progress in rows}
+
+
+def get_author_profile_map(db: Session, videos: list[Video]) -> dict[str, UserProfile]:
+    authors = sorted({video.author for video in videos if video.author})
+    if not authors:
+        return {}
+    rows = (
+        db.query(UserProfile)
+        .join(User, User.id == UserProfile.user_id)
+        .filter(User.username.in_(authors))
+        .all()
+    )
+    return {profile.user.username: profile for profile in rows if profile.user is not None}
 
 
 def user_has_watch_later(db: Session, user: User, video: Video) -> bool:
@@ -584,6 +597,7 @@ def index(
             .all()
         }
     video_progress = get_video_progress_map(db, user, videos)
+    author_profiles = get_author_profile_map(db, videos)
 
     return request.app.state.templates.TemplateResponse(
         request=request,
@@ -602,6 +616,7 @@ def index(
             "order": order,
             "watch_later_ids": watch_later_ids,
             "video_progress": video_progress,
+            "author_profiles": author_profiles,
         },
     )
 
@@ -951,6 +966,7 @@ def watch_video(
         .limit(8)
         .all()
     )
+    author_profiles = get_author_profile_map(db, [video, *related_videos])
     autoplay_id = next_id or (related_videos[0].id if related_videos else None)
     likes_count, dislikes_count = get_reaction_counts(db, video)
     video_progress = get_video_progress(db, user, video)
@@ -973,6 +989,7 @@ def watch_video(
             "autoplay_id": autoplay_id,
             "can_delete": user_can_delete_video(user, video),
             "related_videos": related_videos,
+            "author_profiles": author_profiles,
             "likes_count": likes_count,
             "dislikes_count": dislikes_count,
             "user_reaction": get_user_reaction(db, user, video),

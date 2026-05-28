@@ -4,7 +4,17 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}Локальный видеосайт{% endblock %}</title>
-    <link rel="stylesheet" href="{{ url_for('static', path='/css/main.css') }}?v=31">
+    <script>
+      (function () {
+        try {
+          var theme = localStorage.getItem("localtube:theme") || "light";
+          document.documentElement.dataset.theme = theme === "dark" ? "dark" : "light";
+        } catch (error) {
+          document.documentElement.dataset.theme = "light";
+        }
+      })();
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/main.css') }}?v=37">
   </head>
   <body>
     <header class="topbar">
@@ -23,17 +33,35 @@
         {% endif %}
       </nav>
       <div class="userbar">
-        <button type="button" class="theme-switch" data-theme-toggle aria-label="Переключить тему" title="Переключить тему" aria-pressed="false">
-          <span class="theme-switch-icon sun-icon" aria-hidden="true"></span>
-          <span class="theme-switch-thumb" aria-hidden="true"></span>
-          <span class="theme-switch-icon moon-icon" aria-hidden="true"></span>
-        </button>
         {% if user %}
-          <a class="button" href="/?upload=1">Загрузить</a>
-          <span>{{ user.username }}</span>
-          <form action="/logout" method="post">
-            <button type="submit" class="button ghost">Выйти</button>
-          </form>
+          {% set header_name = current_profile.display_name if current_profile and current_profile.display_name else user.username %}
+          <div class="account-menu" data-account-menu>
+            <button type="button" class="header-avatar-button" data-account-menu-toggle aria-label="Меню профиля {{ header_name }}" title="{{ header_name }}" aria-haspopup="menu" aria-expanded="false">
+              <span class="header-avatar">
+                {% if current_profile and current_profile.avatar_path %}
+                  <img src="/static/uploads/avatars/{{ current_profile.avatar_path }}" alt="">
+                {% else %}
+                  <span>{{ header_name[:1] | upper }}</span>
+                {% endif %}
+              </span>
+            </button>
+            <div class="account-dropdown" role="menu" data-account-dropdown>
+              <a href="/profile" role="menuitem">Профиль</a>
+              <a href="/?upload=1" role="menuitem">Загрузить видео</a>
+              <a href="/account" role="menuitem">Настройки аккаунта</a>
+              <div class="account-dropdown-row">
+                <span>Тема</span>
+                <button type="button" class="theme-switch" data-theme-toggle aria-label="Переключить тему" title="Переключить тему" aria-pressed="false">
+                  <span class="theme-switch-icon sun-icon" aria-hidden="true"></span>
+                  <span class="theme-switch-thumb" aria-hidden="true"></span>
+                  <span class="theme-switch-icon moon-icon" aria-hidden="true"></span>
+                </button>
+              </div>
+              <form action="/logout" method="post">
+                <button type="submit" role="menuitem">Выйти</button>
+              </form>
+            </div>
+          </div>
         {% else %}
           <a class="login-icon" href="/?login=1" aria-label="Войти" title="Войти">
             <span class="visually-hidden">Войти</span>
@@ -44,6 +72,6 @@
     <main class="{% block main_class %}page{% endblock %}">
       {% block content %}{% endblock %}
     </main>
-    <script src="{{ url_for('static', path='/js/app.js') }}?v=31"></script>
+    <script src="{{ url_for('static', path='/js/app.js') }}?v=37"></script>
   </body>
 </html>

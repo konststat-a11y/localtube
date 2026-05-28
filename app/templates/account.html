@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Настройки аккаунта - LocalTube{% endblock %}
+
+{% block content %}
+  <section class="profile-page">
+    <div class="toolbar">
+      <div>
+        <h1>Настройки аккаунта</h1>
+        <p class="meta">Управление профилем, email и паролем.</p>
+      </div>
+    </div>
+
+    <div class="profile-grid">
+      <section class="profile-panel">
+        <h2>Данные пользователя</h2>
+        {% if profile_message %}
+          <p class="notice success">{{ profile_message }}</p>
+        {% endif %}
+        {% if profile_error %}
+          <p class="notice error">{{ profile_error }}</p>
+        {% endif %}
+        <form action="/account" method="post" enctype="multipart/form-data" class="form-stack">
+          <label>
+            Отображаемое имя
+            <input type="text" name="display_name" maxlength="120" value="{{ profile.display_name }}" autocomplete="name">
+          </label>
+          <label>
+            Email
+            <input type="email" name="email" maxlength="255" value="{{ user.email or '' }}" autocomplete="email">
+          </label>
+          <label>
+            Описание профиля
+            <textarea name="bio" rows="5" maxlength="2000">{{ profile.bio }}</textarea>
+          </label>
+          <label>
+            Аватар
+            <input type="file" name="avatar" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp">
+          </label>
+          <button type="submit" class="button primary">Сохранить профиль</button>
+        </form>
+      </section>
+
+      <section class="profile-panel">
+        <h2>Смена пароля</h2>
+        {% if password_message %}
+          <p class="notice success">{{ password_message }}</p>
+        {% endif %}
+        {% if password_error %}
+          <p class="notice error">{{ password_error }}</p>
+        {% endif %}
+        <form action="/account/password" method="post" class="form-stack">
+          <label>
+            Текущий пароль
+            <input type="password" name="current_password" autocomplete="current-password" required>
+          </label>
+          <label>
+            Новый пароль
+            <input type="password" name="new_password" autocomplete="new-password" required>
+          </label>
+          <label>
+            Повторите новый пароль
+            <input type="password" name="confirm_password" autocomplete="new-password" required>
+          </label>
+          <button type="submit" class="button primary">Изменить пароль</button>
+        </form>
+      </section>
+    </div>
+  </section>
+{% endblock %}
