@@ -1,24 +1,24 @@
 {% extends "base.html" %}
 
-{% block title %}Видео - Админ-панель{% endblock %}
+{% block title %}Відео - Адмін-панель{% endblock %}
 
 {% block content %}
   <section class="admin-layout">
     <nav class="admin-nav">
-      <a href="/admin">Обзор</a>
-      <a href="/admin/users">Пользователи</a>
-      <a class="active" href="/admin/videos">Видео</a>
+      <a href="/admin">Огляд</a>
+      <a href="/admin/users">Користувачі</a>
+      <a class="active" href="/admin/videos">Відео</a>
       <a href="/admin/access">Доступ</a>
     </nav>
     <div class="admin-content">
       <div class="toolbar">
-        <h1>Видео</h1>
+        <h1>Відео</h1>
         <form action="/admin/videos/scan" method="post">
-          <button type="submit" class="button primary">Сканировать папку</button>
+          <button type="submit" class="button primary">Сканувати папку</button>
         </form>
       </div>
       {% if scan %}
-        <p class="notice">Результат сканирования: {{ scan }}</p>
+        <p class="notice">Результат сканування: {{ scan }}</p>
       {% endif %}
 
       {% if videos %}
@@ -27,23 +27,22 @@
             <form action="/admin/videos/{{ video.id }}/update" method="post" class="video-edit">
               <div class="video-edit-head">
                 <strong>{{ video.filename }}</strong>
-                <span class="status {% if video.is_available %}ok{% else %}missing{% endif %}">{{ "доступен" if video.is_available else "файл отсутствует" }}</span>
+                <span class="status {% if video.is_available %}ok{% else %}missing{% endif %}">{{ "доступне" if video.is_available else "файл відсутній" }}</span>
               </div>
               <div class="form-grid">
-                <label>Название<input type="text" name="title" value="{{ video.title }}" required></label>
+                <label>Назва<input type="text" name="title" value="{{ video.title }}" required></label>
                 <label>Автор<input type="text" name="author" value="{{ video.author }}"></label>
-                <label>Категория<input type="text" name="category" value="{{ video.category }}"></label>
-                <label>Описание<textarea name="description" rows="3">{{ video.description }}</textarea></label>
+                <label>Опис<textarea name="description" rows="3">{{ video.description }}</textarea></label>
               </div>
               <p class="meta">{{ video.size_bytes | bytes }} · {{ video.file_path }}</p>
-              <button type="submit" class="button">Сохранить</button>
+              <button type="submit" class="button">Зберегти</button>
             </form>
           {% endfor %}
         </div>
       {% else %}
         <div class="empty">
-          <h2>Видео в базе нет</h2>
-          <p>Положите файлы в <code>video_storage</code> и запустите сканирование.</p>
+          <h2>Відео в базі немає</h2>
+          <p>Покладіть файли до <code>video_storage</code> і запустіть сканування.</p>
         </div>
       {% endif %}
     </div>

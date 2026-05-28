@@ -4,17 +4,6 @@
 
 {% block content %}
   <section class="watch-layout" data-watch-page data-video-id="{{ video.id }}" {% if video_progress %}data-progress-current="{{ video_progress.current_seconds }}" data-progress-duration="{{ video_progress.duration_seconds }}"{% endif %} data-next-url="{% if autoplay_id %}/watch/{{ autoplay_id }}{% endif %}">
-    <div class="watch-nav">
-      <a class="button" href="/">Назад</a>
-      <div class="spacer"></div>
-      {% if previous_id %}
-        <a class="button" href="/watch/{{ previous_id }}">Предыдущее</a>
-      {% endif %}
-      {% if next_id %}
-        <a class="button" href="/watch/{{ next_id }}">Следующее</a>
-      {% endif %}
-    </div>
-
     <div class="watch-grid">
       <div class="player-area is-loading" data-player-area>
         <div class="player-skeleton" aria-hidden="true">
@@ -24,12 +13,12 @@
 
         <video class="player" data-player preload="metadata" tabindex="0">
           <source src="/videos/{{ video.id }}/stream">
-          Ваш браузер не поддерживает HTML5 video.
+          Ваш браузер не підтримує HTML5 video.
         </video>
 
         <div class="autoplay-countdown" data-autoplay-countdown hidden>
           <div class="autoplay-countdown-panel">
-            <span class="autoplay-countdown-label">Следующее видео через</span>
+            <span class="autoplay-countdown-label">Наступне відео через</span>
             <strong data-autoplay-countdown-value>5</strong>
             <span class="autoplay-countdown-label">секунд</span>
           </div>
@@ -38,16 +27,16 @@
         <div class="player-controls" data-player-controls>
           <div class="time-row">
             <span data-current-time>0:00</span>
-            <input class="timeline" data-timeline type="range" min="0" max="1000" value="0" aria-label="Позиция видео">
+            <input class="timeline" data-timeline type="range" min="0" max="1000" value="0" aria-label="Позиція відео">
             <span data-duration>0:00</span>
           </div>
 
           <div class="control-row">
-            <button type="button" class="icon-button" data-play-toggle aria-label="Воспроизвести">▶</button>
+            <button type="button" class="icon-button" data-play-toggle aria-label="Відтворити">▶</button>
 
             <label class="control-select">
-              Скорость
-              <select data-speed aria-label="Скорость воспроизведения">
+              Швидкість
+              <select data-speed aria-label="Швидкість відтворення">
                 <option value="0.5">0.5x</option>
                 <option value="0.75">0.75x</option>
                 <option value="1" selected>1x</option>
@@ -58,12 +47,12 @@
             </label>
 
             <label class="volume-slider">
-              <span>Громкость</span>
-              <input data-volume type="range" min="0" max="1" step="0.01" value="1" aria-label="Громкость">
+              <span>Гучність</span>
+              <input data-volume type="range" min="0" max="1" step="0.01" value="1" aria-label="Гучність">
             </label>
 
-            <button type="button" class="icon-button" data-theater-toggle aria-label="Режим кинотеатра" aria-pressed="false">T</button>
-            <button type="button" class="icon-button" data-fullscreen-toggle aria-label="Полный экран">FS</button>
+            <button type="button" class="icon-button" data-theater-toggle aria-label="Режим кінотеатру" aria-pressed="false">T</button>
+            <button type="button" class="icon-button" data-fullscreen-toggle aria-label="Повний екран">FS</button>
           </div>
         </div>
       </div>
@@ -89,45 +78,47 @@
             </span>
           </a>
         {% else %}
-          <p class="meta">Автор не указан</p>
+          <p class="meta">Автора не вказано</p>
         {% endif %}
-        <p class="meta">{{ video.category }} · {{ video.created_at | datetime }} · {{ video.size_bytes | bytes }}</p>
+        <p class="meta">{{ video.created_at | datetime }} · {{ video.size_bytes | bytes }}</p>
         {% if can_delete %}
-          <form action="/videos/{{ video.id }}/delete" method="post" class="watch-actions" data-confirm="Удалить видео «{{ video.title }}»?" data-delete-video>
-            <button type="submit" class="button danger">Удалить видео</button>
+          <form action="/videos/{{ video.id }}/delete" method="post" class="watch-actions" data-confirm="Видалити відео «{{ video.title }}»?" data-delete-video>
+            <button type="submit" class="button danger">Видалити відео</button>
           </form>
         {% endif %}
         <div class="watch-action-row">
           <form action="/videos/{{ video.id }}/reaction" method="post" data-reaction-form>
             <input type="hidden" name="value" value="1">
-            <button type="submit" class="button {% if user_reaction == 1 %}primary{% endif %}" data-like-button>
-              Нравится <span data-like-count>{{ likes_count }}</span>
+            <button type="submit" class="button icon-action {% if user_reaction == 1 %}primary{% endif %}" data-like-button aria-label="Подобається" title="Подобається">
+              <span class="action-icon" aria-hidden="true">👍</span>
+              <span data-like-count>{{ likes_count }}</span>
             </button>
           </form>
           <form action="/videos/{{ video.id }}/reaction" method="post" data-reaction-form>
             <input type="hidden" name="value" value="-1">
-            <button type="submit" class="button {% if user_reaction == -1 %}primary{% endif %}" data-dislike-button>
-              Не нравится <span data-dislike-count>{{ dislikes_count }}</span>
+            <button type="submit" class="button icon-action {% if user_reaction == -1 %}primary{% endif %}" data-dislike-button aria-label="Не подобається" title="Не подобається">
+              <span class="action-icon" aria-hidden="true">👎</span>
+              <span data-dislike-count>{{ dislikes_count }}</span>
             </button>
           </form>
           <form action="/videos/{{ video.id }}/watch-later" method="post" data-watch-later-form>
-            <button type="submit" class="button {% if in_watch_later %}primary{% endif %}" data-watch-later-button>
-              {% if in_watch_later %}Убрать из «Смотреть позже»{% else %}Смотреть позже{% endif %}
+            <button type="submit" class="button icon-action {% if in_watch_later %}primary{% endif %}" data-watch-later-button aria-label="{% if in_watch_later %}Прибрати з «Переглянути пізніше»{% else %}Переглянути пізніше{% endif %}" title="{% if in_watch_later %}Прибрати з «Переглянути пізніше»{% else %}Переглянути пізніше{% endif %}">
+              <span class="action-icon" aria-hidden="true">⏱</span>
             </button>
           </form>
-          <button type="button" class="button" data-share-button data-share-url="{{ request.url }}">Поделиться</button>
+          <button type="button" class="button" data-share-button data-share-url="{{ request.url }}">Поділитися</button>
         </div>
         {% if video.description %}
           <p>{{ video.description }}</p>
         {% else %}
-          <p class="muted">Описание не добавлено.</p>
+          <p class="muted">Опис не додано.</p>
         {% endif %}
 
         <section class="comments" id="comments">
-          <h2>Комментарии</h2>
+          <h2>Коментарі</h2>
           <form action="/videos/{{ video.id }}/comments" method="post" class="comment-form" data-comment-form>
-            <textarea name="body" rows="3" maxlength="2000" placeholder="Добавить комментарий" required></textarea>
-            <button type="submit" class="button primary">Отправить</button>
+            <textarea name="body" rows="3" maxlength="2000" placeholder="Додати коментар" required></textarea>
+            <button type="submit" class="button primary">Надіслати</button>
           </form>
           <div class="comment-list" data-comment-list>
             {% for comment in comments %}
@@ -138,8 +129,8 @@
                     <small>{{ comment.created_at | datetime }}</small>
                   </span>
                   {% if user and (user.is_admin or comment.user_id == user.id or video.author == user.username) %}
-                    <form action="/comments/{{ comment.id }}/delete" method="post" data-confirm="Удалить комментарий?" data-comment-delete-form>
-                      <button type="submit" class="button ghost small-button">Удалить</button>
+                    <form action="/comments/{{ comment.id }}/delete" method="post" data-confirm="Видалити коментар?" data-comment-delete-form>
+                      <button type="submit" class="button ghost small-button">Видалити</button>
                     </form>
                   {% endif %}
                 </div>
@@ -147,18 +138,18 @@
               </article>
             {% endfor %}
           </div>
-          <p class="muted" data-empty-comments {% if comments %}hidden{% endif %}>Комментариев пока нет.</p>
+          <p class="muted" data-empty-comments {% if comments %}hidden{% endif %}>Коментарів поки немає.</p>
         </section>
       </div>
 
-      <aside class="recommendations" aria-label="Рекомендации" data-recommendations>
+      <aside class="recommendations" aria-label="Рекомендації" data-recommendations>
         <label class="recommendations-autoplay">
           <input type="checkbox" data-autoplay>
-          <span>Автовоспроизведение</span>
+          <span>Автовідтворення</span>
         </label>
         <div class="recommendations-head">
-          <h2>Похожие видео</h2>
-          <button type="button" class="icon-button small" data-recommendations-toggle aria-label="Скрыть похожие видео" aria-pressed="false">☰</button>
+          <h2>Інші відео</h2>
+          <button type="button" class="icon-button small" data-recommendations-toggle aria-label="Сховати інші відео" aria-pressed="false">☰</button>
         </div>
         {% if related_videos %}
           <div class="recommendation-list">
@@ -172,13 +163,13 @@
                 </span>
                 <span class="recommendation-info">
                   <strong>{{ item.title }}</strong>
-                  <small>{{ item_author_name or "Автор не указан" }}</small>
+                  <small>{{ item_author_name or "Автора не вказано" }}</small>
                 </span>
               </a>
             {% endfor %}
           </div>
         {% else %}
-          <p class="muted">В этой категории пока нет других доступных видео.</p>
+          <p class="muted">Інших доступних відео поки немає.</p>
         {% endif %}
       </aside>
     </div>

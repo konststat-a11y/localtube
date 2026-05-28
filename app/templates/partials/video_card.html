@@ -3,7 +3,7 @@
 {% set author_profile = author_profiles.get(video.author) if author_profiles is defined and video.author else none %}
 {% set author_name = author_profile.display_name if author_profile and author_profile.display_name else video.author %}
 <article class="video-card {% if progress %}has-progress{% endif %}" data-video-card data-video-id="{{ video.id }}" {% if progress %}data-progress-current="{{ progress.current_seconds }}" data-progress-duration="{{ progress.duration_seconds }}"{% endif %}>
-  <a class="thumb" href="{{ video_href }}" aria-label="{% if user %}Смотреть{% else %}Войти для просмотра{% endif %} {{ video.title }}">
+  <a class="thumb" href="{{ video_href }}" aria-label="{% if user %}Дивитися{% else %}Увійти для перегляду{% endif %} {{ video.title }}">
     <img src="/videos/{{ video.id }}/thumbnail" alt="" loading="lazy" onerror="this.remove()">
     {% if user %}
       <video class="thumb-preview" muted playsinline loop preload="none" disablepictureinpicture disableremoteplayback controlslist="nodownload noplaybackrate noremoteplayback" tabindex="-1" aria-hidden="true" data-preview-video data-preview-src="/videos/{{ video.id }}/stream"></video>
@@ -32,16 +32,16 @@
         </span>
       </a>
     {% else %}
-      <p class="muted">Автор не указан</p>
+      <p class="muted">Автора не вказано</p>
     {% endif %}
-    <p class="meta">{{ video.category }} · {{ video.created_at | datetime }} · {{ video.size_bytes | bytes }}</p>
+    <p class="meta">{{ video.created_at | datetime }} · {{ video.size_bytes | bytes }}</p>
     {% if not user %}
-      <p class="meta">Войдите, чтобы открыть видео.</p>
+      <p class="meta">Увійдіть, щоб відкрити відео.</p>
     {% elif show_card_actions is not defined or show_card_actions %}
       <form action="/videos/{{ video.id }}/watch-later" method="post" class="card-actions">
         <input type="hidden" name="next" value="{{ request.url.path }}{% if request.url.query %}?{{ request.url.query }}{% endif %}">
         <button type="submit" class="button small-button {% if video.id in watch_later_ids %}primary{% endif %}">
-          {% if video.id in watch_later_ids %}Убрать из «Смотреть позже»{% else %}Добавить в Смотреть позже{% endif %}
+          {% if video.id in watch_later_ids %}Прибрати з «Переглянути пізніше»{% else %}Додати до Переглянути пізніше{% endif %}
         </button>
       </form>
     {% endif %}

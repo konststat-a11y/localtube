@@ -1,25 +1,25 @@
 {% extends "base.html" %}
 
-{% block title %}Вход - LocalTube{% endblock %}
+{% block title %}Вхід - LocalTube{% endblock %}
 {% block main_class %}login-page{% endblock %}
 
 {% block content %}
   <section class="login-panel">
-    <h1>Вход</h1>
+    <h1>Вхід</h1>
     {% if error %}
       <p class="alert">{{ error }}</p>
     {% endif %}
     <form action="/login" method="post" class="form-stack">
       <label>
-        Логин
+        Логін
         <input type="text" name="username" autocomplete="username" required autofocus>
       </label>
       <label>
         Пароль
         <input type="password" name="password" autocomplete="current-password" required>
       </label>
-      <button type="submit" class="button primary">Войти</button>
+      <button type="submit" class="button primary">Увійти</button>
     </form>
-    <p class="muted auth-switch">Нет аккаунта? <a href="/register">Зарегистрироваться</a></p>
+    <p class="muted auth-switch">Немає акаунта? <a href="/register">Зареєструватися</a></p>
   </section>
 {% endblock %}

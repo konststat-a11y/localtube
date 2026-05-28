@@ -1,26 +1,26 @@
 {% extends "base.html" %}
 
-{% block title %}Доступ - Админ-панель{% endblock %}
+{% block title %}Доступ - Адмін-панель{% endblock %}
 
 {% block content %}
   <section class="admin-layout">
     <nav class="admin-nav">
-      <a href="/admin">Обзор</a>
-      <a href="/admin/users">Пользователи</a>
-      <a href="/admin/videos">Видео</a>
+      <a href="/admin">Огляд</a>
+      <a href="/admin/users">Користувачі</a>
+      <a href="/admin/videos">Відео</a>
       <a class="active" href="/admin/access">Доступ</a>
     </nav>
     <div class="admin-content">
-      <h1>Управление доступом</h1>
+      <h1>Керування доступом</h1>
 
       {% if users and selected_user %}
         <form method="get" action="/admin/access" class="inline-form">
-          <select name="user_id" aria-label="Пользователь">
+          <select name="user_id" aria-label="Користувач">
             {% for item in users %}
               <option value="{{ item.id }}" {% if selected_user.id == item.id %}selected{% endif %}>{{ item.username }}</option>
             {% endfor %}
           </select>
-          <button type="submit" class="button">Выбрать</button>
+          <button type="submit" class="button">Вибрати</button>
         </form>
 
         <form action="/admin/access/update" method="post" class="access-list">
@@ -29,15 +29,15 @@
             <label class="access-row">
               <input type="checkbox" name="video_ids" value="{{ video.id }}" {% if video.id in selected_ids %}checked{% endif %}>
               <span>{{ video.title }}</span>
-              <small>{{ video.category }} · {{ "доступен" if video.is_available else "файл отсутствует" }}</small>
+              <small>{{ "доступне" if video.is_available else "файл відсутній" }}</small>
             </label>
           {% endfor %}
-          <button type="submit" class="button primary">Сохранить доступ</button>
+          <button type="submit" class="button primary">Зберегти доступ</button>
         </form>
       {% else %}
         <div class="empty">
-          <h2>Нет пользователей</h2>
-          <p>Создайте пользователя на странице пользователей.</p>
+          <h2>Немає користувачів</h2>
+          <p>Створіть користувача на сторінці користувачів.</p>
         </div>
       {% endif %}
     </div>

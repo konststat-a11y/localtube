@@ -1,46 +1,39 @@
 {% extends "base.html" %}
 
-{% block title %}Видео - LocalTube{% endblock %}
+{% block title %}Відео - LocalTube{% endblock %}
 
 {% block content %}
   <div class="layout">
     <aside class="sidebar">
-      <h2>Категории</h2>
-      <a class="category-link {% if not current_category and not current_section %}active{% endif %}" href="/?sort={{ sort }}&order={{ order }}">Все</a>
-      {% for category in categories %}
-        <a class="category-link {% if current_category == category and not current_section %}active{% endif %}" href="/?category={{ category | urlencode }}&sort={{ sort }}&order={{ order }}">{{ category }}</a>
-      {% endfor %}
+      <a class="category-link {% if not current_section %}active{% endif %}" href="/?sort={{ sort }}&order={{ order }}">Головна</a>
       {% if user %}
         <div class="sidebar-section">
-          <h2>Мои видео</h2>
-          <a class="category-link {% if current_section == 'history' %}active{% endif %}" href="/?section=history">История просмотров</a>
-          <a class="category-link {% if current_section == 'watch_later' %}active{% endif %}" href="/?section=watch_later">Смотреть позже</a>
-          <a class="category-link {% if current_section == 'liked' %}active{% endif %}" href="/?section=liked">Понравившиеся видео</a>
+          <h2>Мої відео</h2>
+          <a class="category-link {% if current_section == 'history' %}active{% endif %}" href="/?section=history">Історія переглядів</a>
+          <a class="category-link {% if current_section == 'watch_later' %}active{% endif %}" href="/?section=watch_later">Переглянути пізніше</a>
+          <a class="category-link {% if current_section == 'liked' %}active{% endif %}" href="/?section=liked">Вподобані відео</a>
         </div>
       {% endif %}
     </aside>
 
     <section class="content">
       <div class="toolbar">
-        <h1>{% if section_title %}{{ section_title }}{% elif user %}Доступные видео{% else %}Файлы{% endif %}</h1>
+        <h1>{% if section_title %}{{ section_title }}{% elif user %}Доступні відео{% else %}Файли{% endif %}</h1>
         {% if current_section == "history" %}
-          <form action="/history/clear" method="post" class="filters" data-confirm="Очистить историю просмотров?">
-            <button type="submit" class="button">Очистить историю</button>
+          <form action="/history/clear" method="post" class="filters" data-confirm="Очистити історію переглядів?">
+            <button type="submit" class="button">Очистити історію</button>
           </form>
         {% else %}
         <form method="get" class="filters">
-          {% if current_category %}
-            <input type="hidden" name="category" value="{{ current_category }}">
-          {% endif %}
-          <select name="sort" aria-label="Сортировка">
-            <option value="date" {% if sort == "date" %}selected{% endif %}>По дате</option>
-            <option value="title" {% if sort == "title" %}selected{% endif %}>По названию</option>
+          <select name="sort" aria-label="Сортування">
+            <option value="date" {% if sort == "date" %}selected{% endif %}>За датою</option>
+            <option value="title" {% if sort == "title" %}selected{% endif %}>За назвою</option>
           </select>
           <select name="order" aria-label="Порядок">
-            <option value="desc" {% if order == "desc" %}selected{% endif %}>Сначала новые</option>
-            <option value="asc" {% if order == "asc" %}selected{% endif %}>По возрастанию</option>
+            <option value="desc" {% if order == "desc" %}selected{% endif %}>Спочатку нові</option>
+            <option value="asc" {% if order == "asc" %}selected{% endif %}>За зростанням</option>
           </select>
-          <button type="submit" class="button">Применить</button>
+          <button type="submit" class="button">Застосувати</button>
         </form>
         {% endif %}
       </div>
@@ -53,8 +46,8 @@
         </div>
       {% else %}
         <div class="empty">
-          <h2>Видео пока нет</h2>
-          <p>Администратор должен добавить файлы в папку <code>video_storage</code> и просканировать ее.</p>
+          <h2>Відео поки немає</h2>
+          <p>Адміністратор має додати файли до папки <code>video_storage</code> і просканувати її.</p>
         </div>
       {% endif %}
     </section>
@@ -62,47 +55,47 @@
 
   {% if show_login %}
     <div class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="login-title">
-      <a class="auth-backdrop" href="/" aria-label="Закрыть"></a>
+      <a class="auth-backdrop" href="/" aria-label="Закрити"></a>
       <section class="login-panel auth-modal-panel">
-        <a class="auth-close" href="/" aria-label="Закрыть">x</a>
-        <h1 id="login-title">Вход</h1>
+        <a class="auth-close" href="/" aria-label="Закрити">x</a>
+        <h1 id="login-title">Вхід</h1>
         <form action="/login" method="post" class="form-stack">
           <label>
-            Логин
+            Логін
             <input type="text" name="username" autocomplete="username" required autofocus>
           </label>
           <label>
             Пароль
             <input type="password" name="password" autocomplete="current-password" required>
           </label>
-          <button type="submit" class="button primary">Войти</button>
+          <button type="submit" class="button primary">Увійти</button>
         </form>
-        <p class="muted auth-switch">Нет аккаунта? <a href="/register">Зарегистрироваться</a></p>
+        <p class="muted auth-switch">Немає акаунта? <a href="/register">Зареєструватися</a></p>
       </section>
     </div>
   {% endif %}
 
   {% if show_upload %}
     <div class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="upload-title">
-      <a class="auth-backdrop" href="/" aria-label="Закрыть"></a>
+      <a class="auth-backdrop" href="/" aria-label="Закрити"></a>
       <section class="login-panel auth-modal-panel upload-panel">
-        <a class="auth-close" href="/" aria-label="Закрыть">x</a>
-        <h1 id="upload-title">Загрузка медиафайла</h1>
+        <a class="auth-close" href="/" aria-label="Закрити">x</a>
+        <h1 id="upload-title">Завантаження медіафайлу</h1>
         <form action="/videos/upload" method="post" enctype="multipart/form-data" class="form-stack upload-form" data-upload-form data-min-submit-ms="1000">
           <label>
-            Название видео
-            <input type="text" name="title" autocomplete="off" placeholder="Название">
+            Назва відео
+            <input type="text" name="title" autocomplete="off" placeholder="Назва">
           </label>
           <label class="dropzone" data-dropzone>
-            <span data-dropzone-title>Перетащите видео сюда</span>
-            <small data-dropzone-name>или выберите файл</small>
+            <span data-dropzone-title>Перетягніть відео сюди</span>
+            <small data-dropzone-name>або виберіть файл</small>
             <input type="file" name="media_file" accept="video/mp4,video/quicktime,video/webm,video/x-matroska,.mp4,.m4v,.mov,.webm,.mkv" required>
           </label>
           <div class="upload-progress" aria-live="polite">
             <span class="upload-spinner" aria-hidden="true"></span>
-            <span>Загрузка видео...</span>
+            <span>Завантаження відео...</span>
           </div>
-          <button type="submit" class="button primary">Загрузить</button>
+          <button type="submit" class="button primary">Завантажити</button>
         </form>
       </section>
     </div>

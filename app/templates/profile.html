@@ -14,7 +14,7 @@
       </div>
       <div>
         <h1>{{ profile.display_name or profile_user.username }}</h1>
-        <p class="meta">@{{ profile_user.username }} · {{ "администратор" if profile_user.is_admin else "пользователь" }} · с {{ profile_user.created_at | datetime }}</p>
+        <p class="meta">@{{ profile_user.username }} · {{ "адміністратор" if profile_user.is_admin else "користувач" }} · з {{ profile_user.created_at | datetime }}</p>
         {% if is_own_profile and profile_user.email %}
           <p class="meta">{{ profile_user.email }}</p>
         {% endif %}
@@ -26,20 +26,20 @@
 
     <div class="profile-stats">
       {% if is_own_profile %}
-        <div><strong>{{ stats.available_videos }}</strong><span>Доступных видео</span></div>
-        <div><strong>{{ stats.watch_later }}</strong><span>Смотреть позже</span></div>
+        <div><strong>{{ stats.available_videos }}</strong><span>Доступних відео</span></div>
+        <div><strong>{{ stats.watch_later }}</strong><span>Переглянути пізніше</span></div>
       {% else %}
-        <div><strong>{{ stats.uploaded_videos }}</strong><span>Загружено видео</span></div>
+        <div><strong>{{ stats.uploaded_videos }}</strong><span>Завантажено відео</span></div>
       {% endif %}
-      <div><strong>{{ stats.viewed_videos }}</strong><span>Просмотрено</span></div>
-      <div><strong>{{ stats.liked_videos }}</strong><span>Понравилось</span></div>
-      <div><strong>{{ stats.progress_items }}</strong><span>С прогрессом</span></div>
+      <div><strong>{{ stats.viewed_videos }}</strong><span>Переглянуто</span></div>
+      <div><strong>{{ stats.liked_videos }}</strong><span>Вподобано</span></div>
+      <div><strong>{{ stats.progress_items }}</strong><span>З прогресом</span></div>
     </div>
 
     {% if uploaded_videos %}
       <section class="profile-section">
         <div class="toolbar">
-          <h2>Видео автора</h2>
+          <h2>Відео автора</h2>
         </div>
         <div class="video-grid">
           {% for video in uploaded_videos %}
@@ -50,8 +50,8 @@
     {% else %}
       <section class="profile-section">
         <div class="empty compact-empty">
-          <h2>Видео автора пока нет</h2>
-          <p>Здесь появятся загруженные пользователем видео, доступные вашему аккаунту.</p>
+          <h2>Відео автора поки немає</h2>
+          <p>Тут з'являться завантажені користувачем відео, доступні вашому акаунту.</p>
         </div>
       </section>
     {% endif %}

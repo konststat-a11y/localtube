@@ -11,8 +11,8 @@ function initShellPreferences() {
     if (themeToggle) {
       const isDark = normalizedTheme === "dark";
       themeToggle.setAttribute("aria-pressed", isDark ? "true" : "false");
-      themeToggle.setAttribute("aria-label", isDark ? "Включить светлую тему" : "Включить тёмную тему");
-      themeToggle.setAttribute("title", isDark ? "Включить светлую тему" : "Включить тёмную тему");
+      themeToggle.setAttribute("aria-label", isDark ? "Увімкнути світлу тему" : "Увімкнути темну тему");
+      themeToggle.setAttribute("title", isDark ? "Увімкнути світлу тему" : "Увімкнути темну тему");
     }
   }
 
@@ -20,8 +20,8 @@ function initShellPreferences() {
   document.body.classList.toggle("sidebar-collapsed", savedSidebar);
   if (sidebarToggle) {
     sidebarToggle.setAttribute("aria-pressed", savedSidebar ? "true" : "false");
-    sidebarToggle.setAttribute("aria-label", savedSidebar ? "Показать меню" : "Скрыть меню");
-    sidebarToggle.setAttribute("title", savedSidebar ? "Показать меню" : "Скрыть меню");
+    sidebarToggle.setAttribute("aria-label", savedSidebar ? "Показати меню" : "Сховати меню");
+    sidebarToggle.setAttribute("title", savedSidebar ? "Показати меню" : "Сховати меню");
   }
 
   themeToggle?.addEventListener("click", () => {
@@ -35,8 +35,8 @@ function initShellPreferences() {
     document.body.classList.toggle("sidebar-collapsed", collapsed);
     localStorage.setItem("localtube:sidebarCollapsed", collapsed ? "1" : "0");
     sidebarToggle.setAttribute("aria-pressed", collapsed ? "true" : "false");
-    sidebarToggle.setAttribute("aria-label", collapsed ? "Показать меню" : "Скрыть меню");
-    sidebarToggle.setAttribute("title", collapsed ? "Показать меню" : "Скрыть меню");
+    sidebarToggle.setAttribute("aria-label", collapsed ? "Показати меню" : "Сховати меню");
+    sidebarToggle.setAttribute("title", collapsed ? "Показати меню" : "Сховати меню");
   });
 }
 
@@ -171,9 +171,9 @@ function initShareButtons() {
           await navigator.share({ title: document.title, url });
         } else if (navigator.clipboard) {
           await navigator.clipboard.writeText(url);
-          button.textContent = "Ссылка скопирована";
+          button.textContent = "Посилання скопійовано";
           window.setTimeout(() => {
-            button.textContent = "Поделиться";
+            button.textContent = "Поділитися";
           }, 1600);
         }
       } catch (error) {
@@ -242,12 +242,12 @@ function createCommentElement(comment) {
     const deleteForm = document.createElement("form");
     deleteForm.action = `/comments/${comment.id}/delete`;
     deleteForm.method = "post";
-    deleteForm.dataset.confirm = "Удалить комментарий?";
+    deleteForm.dataset.confirm = "Видалити коментар?";
     deleteForm.dataset.commentDeleteForm = "";
     const deleteButton = document.createElement("button");
     deleteButton.type = "submit";
     deleteButton.className = "button ghost small-button";
-    deleteButton.textContent = "Удалить";
+    deleteButton.textContent = "Видалити";
     deleteForm.append(deleteButton);
     head.append(deleteForm);
   }
@@ -307,7 +307,8 @@ function initWatchAjaxActions() {
       try {
         const result = await submitAjaxForm(form, button);
         if (button instanceof HTMLButtonElement) {
-          button.textContent = result.label;
+          button.setAttribute("aria-label", result.label);
+          button.setAttribute("title", result.label);
           button.classList.toggle("primary", Boolean(result.in_watch_later));
         }
       } catch (error) {
@@ -417,7 +418,7 @@ document.addEventListener("submit", (event) => {
     if (submitter instanceof HTMLButtonElement) {
       submitter.disabled = true;
       submitter.dataset.originalText = submitter.textContent || "";
-      submitter.textContent = "Удаление...";
+      submitter.textContent = "Видалення...";
     }
 
     window.setTimeout(() => {
@@ -435,7 +436,7 @@ document.addEventListener("submit", (event) => {
     if (submitter instanceof HTMLButtonElement) {
       submitter.disabled = true;
       submitter.dataset.originalText = submitter.textContent || "";
-      submitter.textContent = "Загрузка...";
+      submitter.textContent = "Завантаження...";
     }
 
     const minSubmitMs = Number(form.dataset.minSubmitMs || 1000);
@@ -450,7 +451,7 @@ document.addEventListener("submit", (event) => {
   if (submitter instanceof HTMLButtonElement) {
     submitter.disabled = true;
     submitter.dataset.originalText = submitter.textContent || "";
-    submitter.textContent = "Подождите...";
+    submitter.textContent = "Зачекайте...";
   }
 });
 
@@ -476,7 +477,7 @@ function initDropzones() {
     function showFileName() {
       if (fileName) {
         const selectedName = input.files?.[0]?.name || "";
-        fileName.textContent = selectedName ? shortenFileName(selectedName) : "или выберите файл";
+        fileName.textContent = selectedName ? shortenFileName(selectedName) : "або виберіть файл";
         if (selectedName) {
           fileName.setAttribute("title", selectedName);
         } else {
@@ -602,7 +603,7 @@ function initWatchPlayer() {
   function updatePlayState() {
     if (playToggle) {
       playToggle.textContent = video.paused ? "▶" : "Ⅱ";
-      playToggle.setAttribute("aria-label", video.paused ? "Воспроизвести" : "Пауза");
+      playToggle.setAttribute("aria-label", video.paused ? "Відтворити" : "Пауза");
     }
     playerArea.classList.toggle("is-paused", video.paused);
   }
@@ -795,7 +796,7 @@ function initWatchPlayer() {
     watchPage.classList.toggle("recommendations-collapsed");
     const collapsed = watchPage.classList.contains("recommendations-collapsed");
     recommendationsToggle.setAttribute("aria-pressed", collapsed ? "true" : "false");
-    recommendationsToggle.setAttribute("aria-label", collapsed ? "Показать похожие видео" : "Скрыть похожие видео");
+    recommendationsToggle.setAttribute("aria-label", collapsed ? "Показати інші відео" : "Сховати інші відео");
     localStorage.setItem("localtube:recommendationsCollapsed", collapsed ? "1" : "0");
   });
 

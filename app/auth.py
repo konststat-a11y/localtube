@@ -84,7 +84,7 @@ def login(
         return render_auth_form(
             request,
             "login.html",
-            "Неверный логин или пароль.",
+            "Неправильний логін або пароль.",
             status_code=status.HTTP_401_UNAUTHORIZED,
         )
 
@@ -111,7 +111,7 @@ def register(
         return render_auth_form(
             request,
             "register.html",
-            "Укажите логин и пароль.",
+            "Вкажіть логін і пароль.",
             status_code=status.HTTP_400_BAD_REQUEST,
         )
 
@@ -128,7 +128,7 @@ def register(
         return render_auth_form(
             request,
             "register.html",
-            "Пользователь с таким логином уже существует.",
+            "Користувач із таким логіном уже існує.",
             status_code=status.HTTP_400_BAD_REQUEST,
         )
 

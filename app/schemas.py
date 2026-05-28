@@ -1,5 +1,7 @@
 from pydantic import BaseModel
 
+from .config import DEFAULT_VIDEO_CATEGORY
+
 
 class UserCreate(BaseModel):
     username: str
@@ -11,4 +13,4 @@ class VideoUpdate(BaseModel):
     title: str
     description: str = ""
     author: str = ""
-    category: str = "Без категории"
+    category: str = DEFAULT_VIDEO_CATEGORY

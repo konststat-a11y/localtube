@@ -1,21 +1,21 @@
 {% extends "base.html" %}
 
-{% block title %}Админ-панель - LocalTube{% endblock %}
+{% block title %}Адмін-панель - LocalTube{% endblock %}
 
 {% block content %}
   <section class="admin-layout">
     <nav class="admin-nav">
-      <a class="active" href="/admin">Обзор</a>
-      <a href="/admin/users">Пользователи</a>
-      <a href="/admin/videos">Видео</a>
+      <a class="active" href="/admin">Огляд</a>
+      <a href="/admin/users">Користувачі</a>
+      <a href="/admin/videos">Відео</a>
       <a href="/admin/access">Доступ</a>
     </nav>
     <div class="admin-content">
-      <h1>Обзор</h1>
+      <h1>Огляд</h1>
       <div class="stats">
-        <div><strong>{{ users_count }}</strong><span>пользователей</span></div>
-        <div><strong>{{ videos_count }}</strong><span>видео в базе</span></div>
-        <div><strong>{{ available_videos_count }}</strong><span>доступных файлов</span></div>
+        <div><strong>{{ users_count }}</strong><span>користувачів</span></div>
+        <div><strong>{{ videos_count }}</strong><span>відео в базі</span></div>
+        <div><strong>{{ available_videos_count }}</strong><span>доступних файлів</span></div>
       </div>
     </div>
   </section>

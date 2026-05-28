@@ -17,6 +17,7 @@ INITIAL_ADMIN_PASSWORD = "admin"
 
 SUPPORTED_VIDEO_EXTENSIONS = {".mp4", ".webm", ".mkv"}
 UPLOAD_VIDEO_EXTENSIONS = {".mp4", ".m4v", ".mov", ".webm", ".mkv"}
+DEFAULT_VIDEO_CATEGORY = "Без категорії"
 VIDEO_MEDIA_TYPES = {
     ".mp4": "video/mp4",
     ".webm": "video/webm",

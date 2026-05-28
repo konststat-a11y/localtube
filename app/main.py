@@ -47,7 +47,7 @@ def inject_current_profile(request: Request) -> dict:
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="Локальный видеосайт")
+    app = FastAPI(title="Локальний відеосайт")
     app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET_KEY, same_site="lax")
 
     templates = Jinja2Templates(directory=str(TEMPLATE_DIR))

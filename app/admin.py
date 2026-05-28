@@ -126,7 +126,6 @@ def update_video(
     db: Annotated[Session, Depends(get_db)],
     description: Annotated[str, Form()] = "",
     author: Annotated[str, Form()] = "",
-    category: Annotated[str, Form()] = "Без категории",
 ):
     del user
     video = db.query(Video).filter(Video.id == video_id).first()
@@ -134,7 +133,6 @@ def update_video(
         video.title = title.strip() or video.filename
         video.description = description.strip()
         video.author = author.strip()
-        video.category = category.strip() or "Без категории"
         db.commit()
     return RedirectResponse(url="/admin/videos", status_code=status.HTTP_303_SEE_OTHER)
 

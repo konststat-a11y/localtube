@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 
 from .auth import get_current_user, redirect_to_login, require_user
 from .config import (
+    DEFAULT_VIDEO_CATEGORY,
     FFMPEG_PATH,
     MAX_UPLOAD_SIZE_BYTES,
     STREAM_CHUNK_SIZE,
@@ -32,7 +33,6 @@ from .models import Comment, User, UserProfile, Video, VideoAccess, VideoProgres
 router = APIRouter()
 ACTIVE_STREAMS: dict[int, set[Event]] = {}
 ACTIVE_STREAMS_LOCK = Lock()
-DEFAULT_CATEGORY = "Без категории"
 
 
 def register_active_stream(video_id: int) -> Event:
@@ -83,10 +83,17 @@ def delete_file_with_retries(path: Path, attempts: int = 12, delay_seconds: floa
 def remove_video_record(db: Session, video_id: int) -> None:
     video = db.query(Video).filter(Video.id == video_id).first()
     delete_video_thumbnail(video_id)
+    delete_video_relations(db, video_id)
     db.query(VideoAccess).filter(VideoAccess.video_id == video_id).delete()
     if video is not None:
         db.delete(video)
     db.commit()
+
+
+def delete_video_relations(db: Session, video_id: int) -> None:
+    related_models = (Comment, VideoProgress, VideoReaction, ViewHistory, WatchLater)
+    for model in related_models:
+        db.query(model).filter(model.video_id == video_id).delete()
 
 
 def delete_video_file_in_background(video_id: int, path: Path) -> None:
@@ -112,7 +119,7 @@ def user_can_access_video(db: Session, user: User, video: Video) -> bool:
     if user.is_admin:
         return True
     return (
-        db.query(VideoAccess)
+        db.query(VideoAccess.id)
         .filter(VideoAccess.user_id == user.id, VideoAccess.video_id == video.id)
         .first()
         is not None
@@ -132,6 +139,17 @@ def accessible_videos_query(db: Session, user: User):
 
 def public_videos_query(db: Session):
     return db.query(Video).filter(Video.is_available.is_(True))
+
+
+def get_watch_later_ids(db: Session, user: User | None) -> set[int]:
+    if user is None:
+        return set()
+    return {
+        row[0]
+        for row in db.query(WatchLater.video_id)
+        .filter(WatchLater.user_id == user.id)
+        .all()
+    }
 
 
 def ensure_video_access(db: Session, user: User, video_id: int) -> Video:
@@ -216,16 +234,14 @@ def get_user_reaction(db: Session, user: User, video: Video) -> int:
 
 
 def get_reaction_counts(db: Session, video: Video) -> tuple[int, int]:
-    likes = (
-        db.query(VideoReaction)
-        .filter(VideoReaction.video_id == video.id, VideoReaction.value == 1)
-        .count()
+    counts = dict(
+        db.query(VideoReaction.value, func.count(VideoReaction.id))
+        .filter(VideoReaction.video_id == video.id, VideoReaction.value.in_((-1, 1)))
+        .group_by(VideoReaction.value)
+        .all()
     )
-    dislikes = (
-        db.query(VideoReaction)
-        .filter(VideoReaction.video_id == video.id, VideoReaction.value == -1)
-        .count()
-    )
+    likes = counts.get(1, 0)
+    dislikes = counts.get(-1, 0)
     return likes, dislikes
 
 
@@ -423,13 +439,14 @@ def format_datetime_for_json(value: datetime | None) -> str:
 
 def grant_video_access_to_regular_users(db: Session, video_id: int) -> None:
     user_ids = [row[0] for row in db.query(User.id).filter(User.is_admin.is_(False)).all()]
+    existing_user_ids = {
+        row[0]
+        for row in db.query(VideoAccess.user_id)
+        .filter(VideoAccess.video_id == video_id)
+        .all()
+    }
     for user_id in user_ids:
-        exists = (
-            db.query(VideoAccess.id)
-            .filter(VideoAccess.user_id == user_id, VideoAccess.video_id == video_id)
-            .first()
-        )
-        if exists is None:
+        if user_id not in existing_user_ids:
             db.add(VideoAccess(user_id=user_id, video_id=video_id))
 
 
@@ -461,7 +478,7 @@ def ensure_default_video_access(db: Session, user: User) -> None:
     if user.is_admin:
         return
 
-    has_access = db.query(VideoAccess).filter(VideoAccess.user_id == user.id).first()
+    has_access = db.query(VideoAccess.id).filter(VideoAccess.user_id == user.id).first()
     if has_access:
         return
 
@@ -486,7 +503,6 @@ def scan_video_storage(db: Session) -> tuple[int, int, int]:
     db.query(Video).update({Video.is_available: False})
     created = 0
     updated = 0
-    seen_paths: set[str] = set()
     thumbnail_candidates: list[Video] = []
 
     for path in VIDEO_STORAGE_DIR.rglob("*"):
@@ -496,7 +512,6 @@ def scan_video_storage(db: Session) -> tuple[int, int, int]:
             continue
 
         resolved = str(path.resolve())
-        seen_paths.add(resolved)
         size = path.stat().st_size
         video = db.query(Video).filter(Video.file_path == resolved).first()
         if video is None:
@@ -505,7 +520,7 @@ def scan_video_storage(db: Session) -> tuple[int, int, int]:
                 title=path.stem,
                 description="",
                 author="",
-                category="Без категории",
+                category=DEFAULT_VIDEO_CATEGORY,
                 file_path=resolved,
                 size_bytes=size,
                 is_available=True,
@@ -531,7 +546,6 @@ def scan_video_storage(db: Session) -> tuple[int, int, int]:
 def index(
     request: Request,
     db: Annotated[Session, Depends(get_db)],
-    category: Annotated[str | None, Query()] = None,
     section: Annotated[str | None, Query(pattern="^(history|watch_later|liked)$")] = None,
     login: Annotated[bool, Query()] = False,
     sort: Annotated[str, Query(pattern="^(title|date)$")] = "date",
@@ -543,20 +557,12 @@ def index(
         sync_missing_uploaded_video_access(db, user)
 
     base_query = accessible_videos_query(db, user) if user is not None else public_videos_query(db)
-    categories = [
-        row[0]
-        for row in base_query.with_entities(Video.category)
-        .distinct()
-        .order_by(asc(Video.category))
-        .all()
-        if row[0]
-    ]
 
     section_title = None
     if section and user is None:
         return redirect_to_login()
     if section == "history":
-        section_title = "История просмотров"
+        section_title = "Історія переглядів"
         videos = (
             accessible_videos_query(db, user)
             .join(ViewHistory, ViewHistory.video_id == Video.id)
@@ -565,7 +571,7 @@ def index(
             .all()
         )
     elif section == "watch_later":
-        section_title = "Смотреть позже"
+        section_title = "Переглянути пізніше"
         videos = (
             accessible_videos_query(db, user)
             .join(WatchLater, WatchLater.video_id == Video.id)
@@ -574,7 +580,7 @@ def index(
             .all()
         )
     elif section == "liked":
-        section_title = "Понравившиеся видео"
+        section_title = "Вподобані відео"
         videos = (
             accessible_videos_query(db, user)
             .join(VideoReaction, VideoReaction.video_id == Video.id)
@@ -583,19 +589,9 @@ def index(
             .all()
         )
     else:
-        query = base_query
-        if category:
-            query = query.filter(Video.category == category)
-        videos = apply_video_sort(query, sort, order).all()
+        videos = apply_video_sort(base_query, sort, order).all()
 
-    watch_later_ids: set[int] = set()
-    if user is not None:
-        watch_later_ids = {
-            row[0]
-            for row in db.query(WatchLater.video_id)
-            .filter(WatchLater.user_id == user.id)
-            .all()
-        }
+    watch_later_ids = get_watch_later_ids(db, user)
     video_progress = get_video_progress_map(db, user, videos)
     author_profiles = get_author_profile_map(db, videos)
 
@@ -606,8 +602,6 @@ def index(
             "request": request,
             "user": user,
             "videos": videos,
-            "categories": categories,
-            "current_category": category,
             "current_section": section,
             "section_title": section_title,
             "show_login": login and user is None,
@@ -657,7 +651,7 @@ def upload_video(
             title=title.strip() or target_path.stem,
             description="",
             author=user.username,
-            category=DEFAULT_CATEGORY,
+            category=DEFAULT_VIDEO_CATEGORY,
             file_path=str(target_path),
             size_bytes=transcoded_size,
             created_at=now,
@@ -796,7 +790,7 @@ def toggle_watch_later(
         return JSONResponse(
             {
                 "in_watch_later": in_watch_later,
-                "label": "Убрать из «Смотреть позже»" if in_watch_later else "Смотреть позже",
+                "label": "Прибрати з «Переглянути пізніше»" if in_watch_later else "Переглянути пізніше",
             }
         )
     return RedirectResponse(
@@ -923,6 +917,7 @@ def delete_video(
     if not file_deleted:
         video.is_available = False
         video.updated_at = datetime.utcnow()
+        delete_video_relations(db, video.id)
         db.query(VideoAccess).filter(VideoAccess.video_id == video.id).delete()
         db.commit()
         delete_video_file_in_background(video.id, path)
@@ -948,20 +943,22 @@ def watch_video(
     if user is None:
         return redirect_to_login()
 
-    video = db.query(Video).filter(Video.id == video_id, Video.is_available.is_(True)).first()
-    if video is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-    if not user_can_access_video(db, user, video):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+    video = ensure_video_access(db, user, video_id)
     record_view_history(db, user, video)
 
-    accessible_ids = [item.id for item in accessible_videos_query(db, user).order_by(asc(Video.id)).all()]
+    accessible_ids = [
+        row[0]
+        for row in accessible_videos_query(db, user)
+        .with_entities(Video.id)
+        .order_by(asc(Video.id))
+        .all()
+    ]
     current_index = accessible_ids.index(video.id)
     previous_id = accessible_ids[current_index - 1] if current_index > 0 else None
     next_id = accessible_ids[current_index + 1] if current_index < len(accessible_ids) - 1 else None
     related_videos = (
         accessible_videos_query(db, user)
-        .filter(Video.id != video.id, Video.category == video.category)
+        .filter(Video.id != video.id)
         .order_by(func.random())
         .limit(8)
         .all()
@@ -1006,11 +1003,11 @@ def parse_range_header(range_header: str | None, file_size: int) -> tuple[int, i
 
     match = re.fullmatch(r"bytes=(\d*)-(\d*)", range_header.strip())
     if not match:
-        raise HTTPException(status_code=status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE)
+        raise HTTPException(status_code=status.HTTP_416_RANGE_NOT_SATISFIABLE)
 
     start_raw, end_raw = match.groups()
     if not start_raw and not end_raw:
-        raise HTTPException(status_code=status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE)
+        raise HTTPException(status_code=status.HTTP_416_RANGE_NOT_SATISFIABLE)
 
     if start_raw:
         start = int(start_raw)
@@ -1018,12 +1015,12 @@ def parse_range_header(range_header: str | None, file_size: int) -> tuple[int, i
     else:
         suffix_length = int(end_raw)
         if suffix_length == 0:
-            raise HTTPException(status_code=status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE)
+            raise HTTPException(status_code=status.HTTP_416_RANGE_NOT_SATISFIABLE)
         start = max(file_size - suffix_length, 0)
         end = file_size - 1
 
     if start >= file_size or end < start:
-        raise HTTPException(status_code=status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE)
+        raise HTTPException(status_code=status.HTTP_416_RANGE_NOT_SATISFIABLE)
     return start, min(end, file_size - 1), True
 
 
@@ -1050,11 +1047,7 @@ def stream_video(
     range_header: Annotated[str | None, Header(alias="Range")] = None,
 ):
     user = require_user(request, db)
-    video = db.query(Video).filter(Video.id == video_id, Video.is_available.is_(True)).first()
-    if video is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-    if not user_can_access_video(db, user, video):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+    video = ensure_video_access(db, user, video_id)
 
     path = Path(video.file_path)
     if not path.exists() or not path.is_file():

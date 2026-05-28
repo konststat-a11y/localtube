@@ -13,7 +13,7 @@ from .auth import hash_password, require_user, verify_password
 from .config import MAX_AVATAR_SIZE_BYTES, PROFILE_AVATAR_DIR, SUPPORTED_AVATAR_EXTENSIONS
 from .database import get_db
 from .models import User, UserProfile, Video, VideoAccess, VideoProgress, VideoReaction, ViewHistory, WatchLater
-from .videos import accessible_videos_query, get_author_profile_map, get_video_progress_map
+from .videos import accessible_videos_query, get_author_profile_map, get_video_progress_map, get_watch_later_ids
 
 
 router = APIRouter()
@@ -131,15 +131,6 @@ def uploaded_videos_for_viewer(db: Session, viewer: User, profile_user: User) ->
     )
 
 
-def watch_later_ids_for_user(db: Session, user: User) -> set[int]:
-    return {
-        row[0]
-        for row in db.query(WatchLater.video_id)
-        .filter(WatchLater.user_id == user.id)
-        .all()
-    }
-
-
 def normalize_email(email: str) -> str | None:
     email = email.strip().lower()
     if not email:
@@ -198,8 +189,8 @@ def account_page(
         user,
         profile,
         {
-            "profile_message": "Профиль обновлен." if saved == "1" else None,
-            "password_message": "Пароль изменен." if password == "1" else None,
+            "profile_message": "Профіль оновлено." if saved == "1" else None,
+            "password_message": "Пароль змінено." if password == "1" else None,
         },
     )
 
@@ -215,8 +206,8 @@ def profile_page(
     profile = get_or_create_profile(db, user)
     uploaded_videos = uploaded_videos_for_viewer(db, user, user)
     messages = {
-        "profile_message": "Профиль обновлен." if saved == "1" else None,
-        "password_message": "Пароль изменен." if password == "1" else None,
+        "profile_message": "Профіль оновлено." if saved == "1" else None,
+        "password_message": "Пароль змінено." if password == "1" else None,
     }
     return profile_template(
         request,
@@ -231,7 +222,7 @@ def profile_page(
             "uploaded_videos": uploaded_videos,
             "video_progress": get_video_progress_map(db, user, uploaded_videos),
             "author_profiles": get_author_profile_map(db, uploaded_videos),
-            "watch_later_ids": watch_later_ids_for_user(db, user),
+            "watch_later_ids": get_watch_later_ids(db, user),
             "show_card_actions": True,
         },
     )
@@ -264,7 +255,7 @@ def public_profile_page(
             "uploaded_videos": uploaded_videos,
             "video_progress": get_video_progress_map(db, user, uploaded_videos),
             "author_profiles": get_author_profile_map(db, uploaded_videos),
-            "watch_later_ids": watch_later_ids_for_user(db, user),
+            "watch_later_ids": get_watch_later_ids(db, user),
             "show_card_actions": True,
         },
     )
@@ -303,7 +294,7 @@ def update_profile(
             user,
             profile,
             {
-                "profile_error": "Проверьте email или формат аватара.",
+                "profile_error": "Перевірте email або формат аватара.",
             },
             status_code=exc.status_code,
         )
@@ -314,7 +305,7 @@ def update_profile(
             user,
             profile,
             {
-                "profile_error": "Этот email уже используется.",
+                "profile_error": "Цей email уже використовується.",
             },
             status_code=status.HTTP_400_BAD_REQUEST,
         )
@@ -339,7 +330,7 @@ def update_password(
             user,
             profile,
             {
-                "password_error": "Текущий пароль указан неверно.",
+                "password_error": "Поточний пароль вказано неправильно.",
             },
             status_code=status.HTTP_400_BAD_REQUEST,
         )
@@ -349,7 +340,7 @@ def update_password(
             user,
             profile,
             {
-                "password_error": "Новый пароль и подтверждение не совпадают.",
+                "password_error": "Новий пароль і підтвердження не збігаються.",
             },
             status_code=status.HTTP_400_BAD_REQUEST,
         )

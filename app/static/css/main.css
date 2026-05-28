@@ -35,7 +35,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: Roboto, Arial, sans-serif;
 }
 
 a {
@@ -487,6 +487,28 @@ select {
 .button:disabled {
   cursor: default;
   opacity: 0.62;
+}
+
+.icon-action {
+  min-width: 44px;
+  min-height: 40px;
+  gap: 7px;
+  padding: 0 11px;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.icon-action .action-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  font-size: 18px;
+}
+
+.icon-action[data-watch-later-button] {
+  width: 44px;
+  padding: 0;
 }
 
 .shell-toggle {
@@ -1161,13 +1183,6 @@ td {
   max-width: 1380px;
   margin: 0 auto;
   padding: 28px;
-}
-
-.watch-nav {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 16px;
 }
 
 .watch-author {

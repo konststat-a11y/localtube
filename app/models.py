@@ -3,6 +3,7 @@ from datetime import datetime
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import relationship
 
+from .config import DEFAULT_VIDEO_CATEGORY
 from .database import Base
 
 
@@ -52,7 +53,7 @@ class Video(Base):
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=False, default="")
     author = Column(String(255), nullable=False, default="")
-    category = Column(String(120), nullable=False, default="Без категории")
+    category = Column(String(120), nullable=False, default=DEFAULT_VIDEO_CATEGORY)
     file_path = Column(String(1024), unique=True, nullable=False)
     size_bytes = Column(Integer, nullable=False, default=0)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)

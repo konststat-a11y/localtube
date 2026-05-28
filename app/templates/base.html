@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="ru">
+<html lang="uk">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}Локальный видеосайт{% endblock %}</title>
+    <title>{% block title %}Локальний відеосайт{% endblock %}</title>
     <script>
       (function () {
         try {
@@ -14,29 +14,28 @@
         }
       })();
     </script>
-    <link rel="stylesheet" href="{{ url_for('static', path='/css/main.css') }}?v=37">
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/main.css') }}?v=38">
   </head>
   <body>
     <header class="topbar">
       <div class="brand-group">
-        <button type="button" class="menu-icon-button" data-sidebar-toggle aria-label="Скрыть меню" title="Скрыть меню">
+        <button type="button" class="menu-icon-button" data-sidebar-toggle aria-label="Сховати меню" title="Сховати меню">
           <span></span>
           <span></span>
           <span></span>
         </button>
         <a class="brand" href="/">LocalTube</a>
       </div>
-      <nav class="topnav" aria-label="Основная навигация">
-        <a href="/">Видео</a>
+      <nav class="topnav" aria-label="Основна навігація">
         {% if user and user.is_admin %}
-          <a href="/admin">Админ-панель</a>
+          <a href="/admin">Адмін-панель</a>
         {% endif %}
       </nav>
       <div class="userbar">
         {% if user %}
           {% set header_name = current_profile.display_name if current_profile and current_profile.display_name else user.username %}
           <div class="account-menu" data-account-menu>
-            <button type="button" class="header-avatar-button" data-account-menu-toggle aria-label="Меню профиля {{ header_name }}" title="{{ header_name }}" aria-haspopup="menu" aria-expanded="false">
+            <button type="button" class="header-avatar-button" data-account-menu-toggle aria-label="Меню профілю {{ header_name }}" title="{{ header_name }}" aria-haspopup="menu" aria-expanded="false">
               <span class="header-avatar">
                 {% if current_profile and current_profile.avatar_path %}
                   <img src="/static/uploads/avatars/{{ current_profile.avatar_path }}" alt="">
@@ -46,25 +45,25 @@
               </span>
             </button>
             <div class="account-dropdown" role="menu" data-account-dropdown>
-              <a href="/profile" role="menuitem">Профиль</a>
-              <a href="/?upload=1" role="menuitem">Загрузить видео</a>
-              <a href="/account" role="menuitem">Настройки аккаунта</a>
+              <a href="/profile" role="menuitem">Профіль</a>
+              <a href="/?upload=1" role="menuitem">Завантажити відео</a>
+              <a href="/account" role="menuitem">Налаштування акаунта</a>
               <div class="account-dropdown-row">
                 <span>Тема</span>
-                <button type="button" class="theme-switch" data-theme-toggle aria-label="Переключить тему" title="Переключить тему" aria-pressed="false">
+                <button type="button" class="theme-switch" data-theme-toggle aria-label="Перемкнути тему" title="Перемкнути тему" aria-pressed="false">
                   <span class="theme-switch-icon sun-icon" aria-hidden="true"></span>
                   <span class="theme-switch-thumb" aria-hidden="true"></span>
                   <span class="theme-switch-icon moon-icon" aria-hidden="true"></span>
                 </button>
               </div>
               <form action="/logout" method="post">
-                <button type="submit" role="menuitem">Выйти</button>
+                <button type="submit" role="menuitem">Вийти</button>
               </form>
             </div>
           </div>
         {% else %}
-          <a class="login-icon" href="/?login=1" aria-label="Войти" title="Войти">
-            <span class="visually-hidden">Войти</span>
+          <a class="login-icon" href="/?login=1" aria-label="Увійти" title="Увійти">
+            <span class="visually-hidden">Увійти</span>
           </a>
         {% endif %}
       </div>
@@ -72,6 +71,6 @@
     <main class="{% block main_class %}page{% endblock %}">
       {% block content %}{% endblock %}
     </main>
-    <script src="{{ url_for('static', path='/js/app.js') }}?v=37"></script>
+    <script src="{{ url_for('static', path='/js/app.js') }}?v=38"></script>
   </body>
 </html>
