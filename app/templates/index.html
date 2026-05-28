@@ -49,10 +49,17 @@
         <div class="video-grid">
           {% for video in videos %}
             {% set video_href = "/watch/" ~ video.id if user else "/?login=1" %}
-            <article class="video-card">
+            {% set progress = video_progress.get(video.id) %}
+            <article class="video-card {% if progress %}has-progress{% endif %}" data-video-card data-video-id="{{ video.id }}" {% if progress %}data-progress-current="{{ progress.current_seconds }}" data-progress-duration="{{ progress.duration_seconds }}"{% endif %}>
               <a class="thumb" href="{{ video_href }}" aria-label="{% if user %}Смотреть{% else %}Войти для просмотра{% endif %} {{ video.title }}">
                 <img src="/videos/{{ video.id }}/thumbnail" alt="" loading="lazy" onerror="this.remove()">
-                <span>{{ video.title[:1] | upper }}</span>
+                {% if user %}
+                  <video class="thumb-preview" muted playsinline loop preload="none" disablepictureinpicture disableremoteplayback controlslist="nodownload noplaybackrate noremoteplayback" tabindex="-1" aria-hidden="true" data-preview-video data-preview-src="/videos/{{ video.id }}/stream"></video>
+                {% endif %}
+                <span class="thumb-letter">{{ video.title[:1] | upper }}</span>
+                <i class="watch-progress" data-video-progress aria-hidden="true">
+                  <b {% if progress %}style="width: {{ ((progress.current_seconds / progress.duration_seconds) * 100) | round(2) }}%"{% endif %}></b>
+                </i>
               </a>
               <div class="video-card-body">
                 <h2><a href="{{ video_href }}">{{ video.title }}</a></h2>

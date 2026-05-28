@@ -61,6 +61,116 @@ a {
   color: var(--accent);
 }
 
+.brand-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  flex: 0 0 auto;
+}
+
+.menu-icon-button {
+  display: inline-grid;
+  place-items: center;
+  gap: 4px;
+  width: 40px;
+  height: 40px;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.menu-icon-button span {
+  display: block;
+  width: 18px;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.menu-icon-button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.theme-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 0 0 auto;
+  width: 66px;
+  height: 36px;
+  padding: 0 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #e8edf3;
+  color: #334155;
+  cursor: pointer;
+}
+
+body[data-theme="dark"] .theme-switch {
+  background: #111827;
+  color: #e5e7eb;
+}
+
+.theme-switch-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  z-index: 1;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.24);
+  transition: transform 180ms ease;
+}
+
+.theme-switch[aria-pressed="true"] .theme-switch-thumb {
+  transform: translateX(30px);
+}
+
+.theme-switch-icon {
+  position: relative;
+  z-index: 2;
+  width: 16px;
+  height: 16px;
+}
+
+.sun-icon {
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  box-shadow:
+    0 -8px 0 -6px currentColor,
+    0 8px 0 -6px currentColor,
+    8px 0 0 -6px currentColor,
+    -8px 0 0 -6px currentColor,
+    6px 6px 0 -6px currentColor,
+    -6px -6px 0 -6px currentColor,
+    6px -6px 0 -6px currentColor,
+    -6px 6px 0 -6px currentColor;
+}
+
+.moon-icon {
+  border-radius: 50%;
+  box-shadow: inset 5px 0 0 currentColor;
+}
+
+.theme-switch:hover {
+  border-color: #475569;
+  background: #dbe3ec;
+  color: #0f172a;
+}
+
+body[data-theme="dark"] .theme-switch:hover {
+  border-color: #cbd5e1;
+  background: #1f2937;
+  color: #ffffff;
+}
+
 .topnav {
   display: flex;
   gap: 16px;
@@ -309,6 +419,7 @@ select {
   position: relative;
   display: grid;
   place-items: center;
+  overflow: hidden;
   aspect-ratio: 16 / 9;
   background: linear-gradient(135deg, #1f2937, #475569);
   color: white;
@@ -324,13 +435,55 @@ select {
   object-fit: cover;
 }
 
-.thumb span {
-  position: relative;
-  z-index: 1;
+.thumb-preview {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  background: #111827;
+  opacity: 0;
+  transition: opacity 160ms ease;
 }
 
-.thumb img + span {
+.video-card.is-previewing .thumb-preview {
+  opacity: 1;
+}
+
+.thumb-letter {
+  position: relative;
+  z-index: 3;
+}
+
+.thumb img ~ .thumb-letter {
   opacity: 0;
+}
+
+.watch-progress {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 4;
+  height: 6px;
+  background: rgba(17, 24, 39, 0.42);
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.watch-progress b {
+  display: block;
+  width: 0%;
+  height: 100%;
+  background: var(--accent);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+
+.video-card.has-progress:hover .watch-progress,
+.video-card.has-progress:focus-within .watch-progress {
+  opacity: 1;
 }
 
 .video-card-body {

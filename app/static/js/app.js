@@ -7,14 +7,19 @@ function initShellPreferences() {
   function applyTheme(theme) {
     document.body.dataset.theme = theme === "dark" ? "dark" : "light";
     if (themeToggle) {
-      themeToggle.textContent = theme === "dark" ? "Светлая" : "Тёмная";
+      const isDark = theme === "dark";
+      themeToggle.setAttribute("aria-pressed", isDark ? "true" : "false");
+      themeToggle.setAttribute("aria-label", isDark ? "Включить светлую тему" : "Включить тёмную тему");
+      themeToggle.setAttribute("title", isDark ? "Включить светлую тему" : "Включить тёмную тему");
     }
   }
 
   applyTheme(savedTheme);
   document.body.classList.toggle("sidebar-collapsed", savedSidebar);
   if (sidebarToggle) {
-    sidebarToggle.textContent = savedSidebar ? "Показать меню" : "Скрыть меню";
+    sidebarToggle.setAttribute("aria-pressed", savedSidebar ? "true" : "false");
+    sidebarToggle.setAttribute("aria-label", savedSidebar ? "Показать меню" : "Скрыть меню");
+    sidebarToggle.setAttribute("title", savedSidebar ? "Показать меню" : "Скрыть меню");
   }
 
   themeToggle?.addEventListener("click", () => {
@@ -27,7 +32,100 @@ function initShellPreferences() {
     const collapsed = !document.body.classList.contains("sidebar-collapsed");
     document.body.classList.toggle("sidebar-collapsed", collapsed);
     localStorage.setItem("localtube:sidebarCollapsed", collapsed ? "1" : "0");
-    sidebarToggle.textContent = collapsed ? "Показать меню" : "Скрыть меню";
+    sidebarToggle.setAttribute("aria-pressed", collapsed ? "true" : "false");
+    sidebarToggle.setAttribute("aria-label", collapsed ? "Показать меню" : "Скрыть меню");
+    sidebarToggle.setAttribute("title", collapsed ? "Показать меню" : "Скрыть меню");
+  });
+}
+
+function readVideoProgress(element) {
+  if (!(element instanceof HTMLElement)) {
+    return null;
+  }
+
+  const current = Number(element.dataset.progressCurrent || 0);
+  const duration = Number(element.dataset.progressDuration || 0);
+  if (!Number.isFinite(current) || !Number.isFinite(duration) || duration <= 0 || current <= 0) {
+    return null;
+  }
+  return { current, duration };
+}
+
+function postVideoProgress(videoId, current, duration, useBeacon = false) {
+  if (!videoId || !Number.isFinite(current) || !Number.isFinite(duration) || duration <= 0) {
+    return;
+  }
+
+  const data = new FormData();
+  data.set("current_seconds", String(Math.round(clamp(current, 0, duration))));
+  data.set("duration_seconds", String(Math.round(duration)));
+
+  if (useBeacon && navigator.sendBeacon) {
+    navigator.sendBeacon(`/videos/${videoId}/progress`, data);
+    return;
+  }
+
+  fetch(`/videos/${videoId}/progress`, {
+    method: "POST",
+    body: data,
+    headers: {
+      "X-Requested-With": "XMLHttpRequest",
+      "Accept": "application/json",
+    },
+    keepalive: true,
+  }).catch((error) => console.warn(error));
+}
+
+function initVideoCards() {
+  document.querySelectorAll("[data-video-card]").forEach((card) => {
+    const progress = readVideoProgress(card);
+    const bar = card.querySelector("[data-video-progress] b");
+    if (progress && bar instanceof HTMLElement) {
+      const percent = clamp((progress.current / progress.duration) * 100, 0, 100);
+      card.classList.toggle("has-progress", percent > 1);
+      bar.style.width = `${percent}%`;
+    }
+
+    const preview = card.querySelector("[data-preview-video]");
+    if (!(preview instanceof HTMLVideoElement)) {
+      return;
+    }
+
+    let hoverTimer = 0;
+    let previewProgressApplied = false;
+
+    preview.addEventListener("loadedmetadata", () => {
+      if (!previewProgressApplied && progress && progress.current > 3 && progress.duration > 0) {
+        preview.currentTime = clamp(progress.current, 0, Math.max(0, preview.duration - 2));
+        previewProgressApplied = true;
+      }
+    });
+
+    function stopPreview() {
+      window.clearTimeout(hoverTimer);
+      card.classList.remove("is-previewing");
+      preview.pause();
+    }
+
+    card.addEventListener("mouseenter", () => {
+      hoverTimer = window.setTimeout(() => {
+        if (!preview.src) {
+          preview.src = preview.dataset.previewSrc || "";
+        }
+        preview.play().then(() => {
+          card.classList.add("is-previewing");
+        }).catch(() => {
+          card.classList.remove("is-previewing");
+        });
+      }, 260);
+    });
+
+    card.addEventListener("mouseleave", stopPreview);
+    card.addEventListener("focusout", (event) => {
+      if (!card.contains(event.relatedTarget)) {
+        stopPreview();
+      }
+    });
   });
 }
 
@@ -418,6 +516,7 @@ function initWatchPlayer() {
   const currentTimeEl = watchPage.querySelector("[data-current-time]");
   const durationEl = watchPage.querySelector("[data-duration]");
   const nextUrl = watchPage.dataset.nextUrl || "";
+  const videoId = watchPage.dataset.videoId || "";
   let lastHorizontalKey = "";
   let lastHorizontalAt = 0;
   let horizontalPressCount = 0;
@@ -462,6 +561,10 @@ function initWatchPlayer() {
       speedSelect.value = String(savedSpeed);
     }
   }
+
+  const savedProgress = readVideoProgress(watchPage);
+  let restoredProgress = false;
+  let lastProgressSaveAt = 0;
 
   function updatePlayState() {
     if (playToggle) {
@@ -521,6 +624,20 @@ function initWatchPlayer() {
     video.currentTime = clamp(video.currentTime + seconds, 0, video.duration);
   }
 
+  function saveCurrentProgress(force = false, useBeacon = false) {
+    if (!Number.isFinite(video.duration) || video.duration <= 0) {
+      return;
+    }
+
+    const now = window.performance.now();
+    if (!force && now - lastProgressSaveAt < 5000) {
+      return;
+    }
+
+    lastProgressSaveAt = now;
+    postVideoProgress(videoId, video.currentTime, video.duration, useBeacon);
+  }
+
   function hideAutoplayCountdown() {
     if (autoplayCountdownTimer) {
       window.clearInterval(autoplayCountdownTimer);
@@ -560,12 +677,20 @@ function initWatchPlayer() {
   playerArea.classList.add("is-paused");
   video.addEventListener("loadedmetadata", () => {
     playerArea.classList.remove("is-loading");
+    if (!restoredProgress && savedProgress && savedProgress.current > 3 && savedProgress.duration > 0) {
+      video.currentTime = clamp(savedProgress.current, 0, Math.max(0, video.duration - 2));
+      restoredProgress = true;
+    }
     updateTimeline();
   });
   video.addEventListener("canplay", () => playerArea.classList.remove("is-loading"));
   video.addEventListener("play", updatePlayState);
   video.addEventListener("pause", updatePlayState);
   video.addEventListener("timeupdate", updateTimeline);
+  video.addEventListener("timeupdate", () => saveCurrentProgress(false));
+  video.addEventListener("pause", () => saveCurrentProgress(true));
+  video.addEventListener("ended", () => saveCurrentProgress(true));
+  window.addEventListener("pagehide", () => saveCurrentProgress(true, true));
   video.addEventListener("durationchange", updateTimeline);
   video.addEventListener("volumechange", updateVolumeState);
   video.addEventListener("ended", () => {
@@ -710,6 +835,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initShellPreferences();
   initShareButtons();
   initDropzones();
+  initVideoCards();
   initWatchAjaxActions();
   initWatchPlayer();
 });

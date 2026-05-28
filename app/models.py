@@ -69,6 +69,21 @@ class ViewHistory(Base):
     video = relationship("Video")
 
 
+class VideoProgress(Base):
+    __tablename__ = "video_progress"
+    __table_args__ = (UniqueConstraint("user_id", "video_id", name="uq_user_video_progress"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    video_id = Column(Integer, ForeignKey("videos.id"), nullable=False, index=True)
+    current_seconds = Column(Integer, nullable=False, default=0)
+    duration_seconds = Column(Integer, nullable=False, default=0)
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow, index=True)
+
+    user = relationship("User")
+    video = relationship("Video")
+
+
 class WatchLater(Base):
     __tablename__ = "watch_later"
     __table_args__ = (UniqueConstraint("user_id", "video_id", name="uq_user_video_watch_later"),)

@@ -26,7 +26,7 @@ from .config import (
     VIDEO_STORAGE_DIR,
 )
 from .database import SessionLocal, get_db
-from .models import Comment, User, Video, VideoAccess, VideoReaction, ViewHistory, WatchLater
+from .models import Comment, User, Video, VideoAccess, VideoProgress, VideoReaction, ViewHistory, WatchLater
 
 
 router = APIRouter()
@@ -154,6 +154,34 @@ def record_view_history(db: Session, user: User, video: Video) -> None:
     else:
         entry.viewed_at = datetime.utcnow()
     db.commit()
+
+
+def get_video_progress(db: Session, user: User, video: Video) -> VideoProgress | None:
+    progress = (
+        db.query(VideoProgress)
+        .filter(VideoProgress.user_id == user.id, VideoProgress.video_id == video.id)
+        .first()
+    )
+    if progress is None or progress.duration_seconds <= 0 or progress.current_seconds <= 0:
+        return None
+    return progress
+
+
+def get_video_progress_map(db: Session, user: User | None, videos: list[Video]) -> dict[int, VideoProgress]:
+    if user is None or not videos:
+        return {}
+    video_ids = [video.id for video in videos]
+    rows = (
+        db.query(VideoProgress)
+        .filter(
+            VideoProgress.user_id == user.id,
+            VideoProgress.video_id.in_(video_ids),
+            VideoProgress.current_seconds > 0,
+            VideoProgress.duration_seconds > 0,
+        )
+        .all()
+    )
+    return {progress.video_id: progress for progress in rows}
 
 
 def user_has_watch_later(db: Session, user: User, video: Video) -> bool:
@@ -555,6 +583,7 @@ def index(
             .filter(WatchLater.user_id == user.id)
             .all()
         }
+    video_progress = get_video_progress_map(db, user, videos)
 
     return request.app.state.templates.TemplateResponse(
         request=request,
@@ -572,6 +601,7 @@ def index(
             "sort": sort,
             "order": order,
             "watch_later_ids": watch_later_ids,
+            "video_progress": video_progress,
         },
     )
 
@@ -675,6 +705,55 @@ def clear_history(
     db.query(ViewHistory).filter(ViewHistory.user_id == user.id).delete()
     db.commit()
     return RedirectResponse(url="/?section=history", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/videos/{video_id}/progress")
+def save_video_progress(
+    video_id: int,
+    user: Annotated[User, Depends(require_user)],
+    db: Annotated[Session, Depends(get_db)],
+    current_seconds: Annotated[int, Form()],
+    duration_seconds: Annotated[int, Form()],
+):
+    video = ensure_video_access(db, user, video_id)
+    duration_seconds = max(duration_seconds, 0)
+    current_seconds = max(current_seconds, 0)
+    if duration_seconds <= 0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
+
+    current_seconds = min(current_seconds, duration_seconds)
+    progress = (
+        db.query(VideoProgress)
+        .filter(VideoProgress.user_id == user.id, VideoProgress.video_id == video.id)
+        .first()
+    )
+    if duration_seconds - current_seconds <= 2:
+        if progress is not None:
+            db.delete(progress)
+            db.commit()
+        return JSONResponse({"saved": False, "current_seconds": 0, "duration_seconds": duration_seconds})
+
+    if progress is None:
+        progress = VideoProgress(
+            user_id=user.id,
+            video_id=video.id,
+            current_seconds=current_seconds,
+            duration_seconds=duration_seconds,
+            updated_at=datetime.utcnow(),
+        )
+        db.add(progress)
+    else:
+        progress.current_seconds = current_seconds
+        progress.duration_seconds = duration_seconds
+        progress.updated_at = datetime.utcnow()
+    db.commit()
+    return JSONResponse(
+        {
+            "saved": True,
+            "current_seconds": current_seconds,
+            "duration_seconds": duration_seconds,
+        }
+    )
 
 
 @router.post("/videos/{video_id}/watch-later")
@@ -874,6 +953,7 @@ def watch_video(
     )
     autoplay_id = next_id or (related_videos[0].id if related_videos else None)
     likes_count, dislikes_count = get_reaction_counts(db, video)
+    video_progress = get_video_progress(db, user, video)
     comments = (
         db.query(Comment)
         .filter(Comment.video_id == video.id)
@@ -897,6 +977,7 @@ def watch_video(
             "dislikes_count": dislikes_count,
             "user_reaction": get_user_reaction(db, user, video),
             "in_watch_later": user_has_watch_later(db, user, video),
+            "video_progress": video_progress,
             "comments": comments,
         },
     )
