@@ -18,6 +18,7 @@ from .auth import get_current_user, redirect_to_login, require_user
 from .config import (
     DEFAULT_VIDEO_CATEGORY,
     FFMPEG_PATH,
+    LOCAL_FFMPEG_PATH,
     MAX_UPLOAD_SIZE_BYTES,
     STREAM_CHUNK_SIZE,
     SUPPORTED_VIDEO_EXTENSIONS,
@@ -300,17 +301,19 @@ def get_thumbnail_path(video_id: int) -> Path:
 
 
 def resolve_ffmpeg_path() -> str:
-    configured_path = Path(FFMPEG_PATH)
-    if configured_path.exists():
-        return str(configured_path)
+    search_paths = [FFMPEG_PATH, str(LOCAL_FFMPEG_PATH), "ffmpeg"]
+    for candidate in search_paths:
+        configured_path = Path(candidate)
+        if configured_path.exists():
+            return str(configured_path)
 
-    found_path = shutil.which(FFMPEG_PATH)
-    if found_path:
-        return found_path
+        found_path = shutil.which(candidate)
+        if found_path:
+            return found_path
 
     raise HTTPException(
         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-        detail="ffmpeg is required for video transcoding",
+        detail="ffmpeg is required for video transcoding. Run install_ffmpeg.bat or set VIDEOCLOUD_FFMPEG_PATH.",
     )
 
 

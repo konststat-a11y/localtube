@@ -66,6 +66,13 @@ product_spec.md
 2. локальний файл `tools/ffmpeg/bin/ffmpeg.exe`;
 3. команда `ffmpeg` з `PATH`.
 
+Папка `tools/` не комітиться в репозиторій, тому після чистого клонування локальний `ffmpeg`
+потрібно встановити окремо:
+
+```powershell
+.\install_ffmpeg.bat
+```
+
 Без `ffmpeg` уже додані сумісні відео можуть відтворюватися, але транскодування та генерація прев'ю будуть недоступні.
 
 ## Перший запуск
@@ -76,6 +83,7 @@ product_spec.md
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install --upgrade pip
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\install_ffmpeg.bat
 ```
 
 Застосуйте міграції бази даних:
@@ -238,10 +246,17 @@ http://127.0.0.1:8000/admin
 
 ### Завантаження відео падає через ffmpeg
 
+Якщо проєкт щойно клонований, спочатку встановіть локальний `ffmpeg`:
+
+```powershell
+.\install_ffmpeg.bat
+```
+
 Перевірте, що `ffmpeg` доступний:
 
 ```powershell
 ffmpeg -version
+.\tools\ffmpeg\bin\ffmpeg.exe -version
 ```
 
 Або вкажіть шлях явно:
