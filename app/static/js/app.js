@@ -1,8 +1,8 @@
 function initShellPreferences() {
   const themeToggle = document.querySelector("[data-theme-toggle]");
   const sidebarToggle = document.querySelector("[data-sidebar-toggle]");
-  const savedTheme = localStorage.getItem("localtube:theme") || "light";
-  const savedSidebar = localStorage.getItem("localtube:sidebarCollapsed") === "1";
+  const savedTheme = localStorage.getItem("videocloud:theme") || "light";
+  const savedSidebar = localStorage.getItem("videocloud:sidebarCollapsed") === "1";
 
   function applyTheme(theme) {
     const normalizedTheme = theme === "dark" ? "dark" : "light";
@@ -26,14 +26,14 @@ function initShellPreferences() {
 
   themeToggle?.addEventListener("click", () => {
     const nextTheme = document.body.dataset.theme === "dark" ? "light" : "dark";
-    localStorage.setItem("localtube:theme", nextTheme);
+    localStorage.setItem("videocloud:theme", nextTheme);
     applyTheme(nextTheme);
   });
 
   sidebarToggle?.addEventListener("click", () => {
     const collapsed = !document.body.classList.contains("sidebar-collapsed");
     document.body.classList.toggle("sidebar-collapsed", collapsed);
-    localStorage.setItem("localtube:sidebarCollapsed", collapsed ? "1" : "0");
+    localStorage.setItem("videocloud:sidebarCollapsed", collapsed ? "1" : "0");
     sidebarToggle.setAttribute("aria-pressed", collapsed ? "true" : "false");
     sidebarToggle.setAttribute("aria-label", collapsed ? "Показати меню" : "Сховати меню");
     sidebarToggle.setAttribute("title", collapsed ? "Показати меню" : "Сховати меню");
@@ -562,11 +562,11 @@ function initWatchPlayer() {
     return;
   }
 
-  const savedTheater = localStorage.getItem("localtube:theater") === "1";
-  const savedCollapsed = localStorage.getItem("localtube:recommendationsCollapsed") === "1";
-  const savedAutoplay = localStorage.getItem("localtube:autoplay") === "1";
-  const savedVolume = Number(localStorage.getItem("localtube:volume"));
-  const savedSpeed = Number(localStorage.getItem("localtube:speed"));
+  const savedTheater = localStorage.getItem("videocloud:theater") === "1";
+  const savedCollapsed = localStorage.getItem("videocloud:recommendationsCollapsed") === "1";
+  const savedAutoplay = localStorage.getItem("videocloud:autoplay") === "1";
+  const savedVolume = Number(localStorage.getItem("videocloud:volume"));
+  const savedSpeed = Number(localStorage.getItem("videocloud:speed"));
 
   if (savedTheater) {
     watchPage.classList.add("theater-mode");
@@ -615,7 +615,7 @@ function initWatchPlayer() {
     if (volumeInput instanceof HTMLInputElement) {
       volumeInput.value = String(video.muted ? 0 : video.volume);
     }
-    localStorage.setItem("localtube:volume", String(video.volume));
+    localStorage.setItem("videocloud:volume", String(video.volume));
   }
 
   function updateTimeline() {
@@ -758,7 +758,7 @@ function initWatchPlayer() {
     const rate = Number(speedSelect.value);
     if (Number.isFinite(rate) && rate > 0) {
       video.playbackRate = rate;
-      localStorage.setItem("localtube:speed", String(rate));
+      localStorage.setItem("videocloud:speed", String(rate));
     }
   });
 
@@ -777,7 +777,7 @@ function initWatchPlayer() {
 
   autoplayInput?.addEventListener("change", () => {
     if (autoplayInput instanceof HTMLInputElement) {
-      localStorage.setItem("localtube:autoplay", autoplayInput.checked ? "1" : "0");
+      localStorage.setItem("videocloud:autoplay", autoplayInput.checked ? "1" : "0");
       if (!autoplayInput.checked) {
         hideAutoplayCountdown();
       }
@@ -789,7 +789,7 @@ function initWatchPlayer() {
     const enabled = watchPage.classList.contains("theater-mode");
     theaterToggle.classList.toggle("is-active", enabled);
     theaterToggle.setAttribute("aria-pressed", enabled ? "true" : "false");
-    localStorage.setItem("localtube:theater", enabled ? "1" : "0");
+    localStorage.setItem("videocloud:theater", enabled ? "1" : "0");
   });
 
   recommendationsToggle?.addEventListener("click", () => {
@@ -797,7 +797,7 @@ function initWatchPlayer() {
     const collapsed = watchPage.classList.contains("recommendations-collapsed");
     recommendationsToggle.setAttribute("aria-pressed", collapsed ? "true" : "false");
     recommendationsToggle.setAttribute("aria-label", collapsed ? "Показати інші відео" : "Сховати інші відео");
-    localStorage.setItem("localtube:recommendationsCollapsed", collapsed ? "1" : "0");
+    localStorage.setItem("videocloud:recommendationsCollapsed", collapsed ? "1" : "0");
   });
 
   fullscreenToggle?.addEventListener("click", () => {

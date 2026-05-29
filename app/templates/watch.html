@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ video.title }} - LocalTube{% endblock %}
+{% block title %}{{ video.title }} - VideoCloud{% endblock %}
 
 {% block content %}
   <section class="watch-layout" data-watch-page data-video-id="{{ video.id }}" {% if video_progress %}data-progress-current="{{ video_progress.current_seconds }}" data-progress-duration="{{ video_progress.duration_seconds }}"{% endif %} data-next-url="{% if autoplay_id %}/watch/{{ autoplay_id }}{% endif %}">

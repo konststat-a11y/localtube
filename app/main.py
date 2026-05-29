@@ -7,7 +7,6 @@ from starlette.middleware.sessions import SessionMiddleware
 from . import admin, auth, models, profile, videos
 from .config import PROFILE_AVATAR_DIR, SESSION_SECRET_KEY, STATIC_DIR, TEMPLATE_DIR, VIDEO_STORAGE_DIR
 from .database import SessionLocal
-from .migration_runner import run_database_migrations
 from .models import UserProfile
 
 
@@ -66,7 +65,6 @@ def create_app() -> FastAPI:
     def startup() -> None:
         VIDEO_STORAGE_DIR.mkdir(parents=True, exist_ok=True)
         PROFILE_AVATAR_DIR.mkdir(parents=True, exist_ok=True)
-        run_database_migrations()
         db = SessionLocal()
         try:
             auth.ensure_initial_admin(db)

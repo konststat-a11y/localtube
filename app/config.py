@@ -28,4 +28,4 @@ MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024 * 1024
 MAX_AVATAR_SIZE_BYTES = 2 * 1024 * 1024
 SUPPORTED_AVATAR_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 LOCAL_FFMPEG_PATH = BASE_DIR / "tools" / "ffmpeg" / "bin" / "ffmpeg.exe"
-FFMPEG_PATH = os.getenv("LOCALTUBE_FFMPEG_PATH", str(LOCAL_FFMPEG_PATH) if LOCAL_FFMPEG_PATH.exists() else "ffmpeg")
+FFMPEG_PATH = os.getenv("VIDEOCLOUD_FFMPEG_PATH", str(LOCAL_FFMPEG_PATH) if LOCAL_FFMPEG_PATH.exists() else "ffmpeg")
