@@ -94,8 +94,6 @@ def login(
 
 @router.get("/register")
 def register_page(request: Request):
-    if request.session.get("user_id"):
-        return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
     return render_auth_form(request, "register.html")
 
 
@@ -137,10 +135,19 @@ def register(
     return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
 
 
-@router.post("/logout")
-def logout(request: Request):
+def clear_session_and_redirect(request: Request) -> RedirectResponse:
     request.session.clear()
     return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.get("/logout")
+def logout_page(request: Request):
+    return clear_session_and_redirect(request)
+
+
+@router.post("/logout")
+def logout(request: Request):
+    return clear_session_and_redirect(request)
 
 
 def ensure_initial_admin(db: Session) -> None:
